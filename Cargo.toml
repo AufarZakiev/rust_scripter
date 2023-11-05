@@ -1,7 +1,7 @@
 [package]
-name = "eframe_template"
+name = "rust_labview"
 version = "0.1.0"
-authors = ["Emil Ernerfeldt <emil.ernerfeldt@gmail.com>"]
+authors = ["Aufar Zakiev <zaufar@gmail.com>"]
 edition = "2021"
 rust-version = "1.71"
 
