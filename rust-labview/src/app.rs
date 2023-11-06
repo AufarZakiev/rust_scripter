@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+use function_widget::{FunctionWidget, Runnable, ParamTypes};
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -65,31 +69,19 @@ impl eframe::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-            ui.heading("eframe template");
-
-            ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(&mut self.label);
-            });
-
-            ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                self.value += 1.0;
-            }
-
-            ui.separator();
-
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/eframe_template/blob/master/",
-                "Source code."
-            ));
-
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                powered_by_egui_and_eframe(ui);
-                egui::warn_if_debug_build(ui);
-            });
-        });
+            let default_runnable = Runnable {
+                inputs: HashMap::from([
+                    ("Input1".into(), ParamTypes::String),
+                    ("Input2".into(),  ParamTypes::Int),
+                    ("Input3".into(),  ParamTypes::Float),
+                ]),
+                outputs: HashMap::from([
+                    ("Output1".into(), ParamTypes::String),
+                    ("Output2".into(),  ParamTypes::Int),
+                    ("Output3".into(),  ParamTypes::Float),
+                ]),
+            };
+            ui.add(FunctionWidget::new(default_runnable));
     }
 }
 

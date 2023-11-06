@@ -1,5 +1,5 @@
 [package]
-name = "function-widget"
+name = "runnable"
 version = "0.1.0"
 edition = "2021"
 
