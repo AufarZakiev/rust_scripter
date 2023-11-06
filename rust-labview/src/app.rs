@@ -82,6 +82,9 @@ impl eframe::App for TemplateApp {
                 ]),
             };
             ui.add(FunctionWidget::new(default_runnable));
+
+            powered_by_egui_and_eframe(ui)
+        });
     }
 }
 
