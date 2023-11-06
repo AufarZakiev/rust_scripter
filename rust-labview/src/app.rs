@@ -72,13 +72,13 @@ impl eframe::App for TemplateApp {
             let default_runnable = Runnable {
                 inputs: HashMap::from([
                     ("Input1".into(), ParamTypes::String),
-                    ("Input2".into(),  ParamTypes::Int),
-                    ("Input3".into(),  ParamTypes::Float),
+                    ("Input2".into(), ParamTypes::Int),
+                    ("Input3".into(), ParamTypes::Float),
                 ]),
                 outputs: HashMap::from([
                     ("Output1".into(), ParamTypes::String),
-                    ("Output2".into(),  ParamTypes::Int),
-                    ("Output3".into(),  ParamTypes::Float),
+                    ("Output2".into(), ParamTypes::Int),
+                    ("Output3".into(), ParamTypes::Float),
                 ]),
             };
             ui.add(FunctionWidget::new(default_runnable));
