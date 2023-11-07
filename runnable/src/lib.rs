@@ -1,12 +1,10 @@
-use std::collections::HashMap;
-
 pub enum ParamTypes {
-    Int,
-    Float,
+    Number,
     String,
+    Bool,
 }
 
 pub struct Runnable {
-    pub inputs: HashMap<String, ParamTypes>,
-    pub outputs: HashMap<String, ParamTypes>,
+    pub inputs: Vec<(String, ParamTypes)>,
+    pub outputs: Vec<(String, ParamTypes)>,
 }

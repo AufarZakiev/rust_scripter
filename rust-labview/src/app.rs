@@ -1,24 +1,37 @@
-use std::collections::HashMap;
-
+use egui::{Rect, Pos2};
 use function_widget::{FunctionWidget, Runnable, ParamTypes};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
-    // Example stuff:
-    label: String,
-
     #[serde(skip)] // This how you opt-out of serialization of a field
-    value: f32,
+    rects: Vec<Rect>
 }
 
 impl Default for TemplateApp {
     fn default() -> Self {
+        // let default_runnable = Runnable {
+        //     inputs: vec![
+        //         ("Input1".into(), ParamTypes::String),
+        //         ("Input2".into(), ParamTypes::Number),
+        //         ("Input3".into(), ParamTypes::Bool),
+        //     ],
+        //     outputs: vec![
+        //         ("Output1".into(), ParamTypes::String),
+        //         ("Output2".into(), ParamTypes::Bool),
+        //         ("Output3".into(), ParamTypes::String),
+        //     ],
+        // };
+
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
+            rects: vec![ Rect { 
+                min: Pos2 {x: 0.0, y: 0.0}, 
+                max: Pos2 {  
+                    x: 30.0, 
+                    y: 45.0, 
+                }
+            }]
         }
     }
 }
@@ -69,19 +82,9 @@ impl eframe::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            let default_runnable = Runnable {
-                inputs: HashMap::from([
-                    ("Input1".into(), ParamTypes::String),
-                    ("Input2".into(), ParamTypes::Int),
-                    ("Input3".into(), ParamTypes::Float),
-                ]),
-                outputs: HashMap::from([
-                    ("Output1".into(), ParamTypes::String),
-                    ("Output2".into(), ParamTypes::Int),
-                    ("Output3".into(), ParamTypes::Float),
-                ]),
-            };
-            ui.add(FunctionWidget::new(default_runnable));
+            for ele in self.rects.iter_mut() {
+                ui.add(&mut FunctionWidget::new(ele));   
+            }
 
             powered_by_egui_and_eframe(ui)
         });

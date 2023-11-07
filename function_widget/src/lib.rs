@@ -1,46 +1,57 @@
 use std::cmp::max;
 
 pub use runnable::{Runnable, ParamTypes};
-use egui::{widgets::Widget, vec2, Sense, Rounding, Color32};
+use egui::{widgets::Widget, Sense, Rounding, Color32, CursorIcon, Rect, Pos2};
 
 #[must_use = "You should put this widget in an ui with `ui.add(widget);`"]
-pub struct FunctionWidget {
-    function: Runnable,
+pub struct FunctionWidget<'a> {
+    pub rect: &'a mut Rect
 }
 
-impl FunctionWidget {
-    pub fn new(function: Runnable) -> Self {
-        Self { function }
-    }
-
-    pub fn function(mut self, function: Runnable) -> Self {
-        self.function = function;
-        self
+impl<'a> FunctionWidget<'a> {
+    pub fn new(rect: &'a mut Rect) -> Self {
+        Self { 
+            rect
+        }
     }
 }
 
-impl Widget for FunctionWidget {
+impl Widget for &mut FunctionWidget<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        let FunctionWidget {
-            function
-        } = self;
-
-        let inputs = function.inputs;
-        let outputs = function.outputs;
-
-        let size = vec2(
-            30.0,
-            max(inputs.len(), outputs.len()) as f32 * 15.0,
-        );
-
-        let (_, response) = ui.allocate_at_least(size, Sense::drag());
+        let response = ui.allocate_rect(*self.rect, Sense::drag());
 
         if ui.is_rect_visible(response.rect) {
             let stroke = ui.visuals().widgets.hovered.bg_stroke;
             let painter = ui.painter();
 
+            if response.hovered() {
+                ui.output_mut(|o| { o.cursor_icon = CursorIcon::Grab })
+            }
+
+            if response.dragged() || response.drag_released() {
+                ui.ctx().set_cursor_icon(CursorIcon::Grabbing);
+
+                if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
+                    let delta = pointer_pos - response.rect.center();
+                    let moved_rect = response.rect.translate(delta);
+
+                    painter.rect(
+                        moved_rect, 
+                        Rounding::same(1.0), 
+                        Color32::from_rgb(195, 255, 104), 
+                        stroke
+                    );
+
+                    let moved_response = ui.allocate_rect(moved_rect, Sense::drag());
+
+                    *self.rect = moved_rect;
+
+                    return moved_response;
+                }
+            }
+        
             painter.rect(
-                response.rect, 
+                *self.rect, 
                 Rounding::same(1.0), 
                 Color32::from_rgb(195, 255, 104), 
                 stroke
