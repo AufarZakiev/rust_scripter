@@ -1,45 +1,33 @@
 use egui::{Rect, Pos2};
-use function_widget::{FunctionWidget, Runnable, ParamTypes};
+use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
     #[serde(skip)] // This how you opt-out of serialization of a field
-    rects: Vec<Rect>
+    rects: Vec<FunctionConfig>
 }
 
 impl Default for TemplateApp {
     fn default() -> Self {
-        // let default_runnable = Runnable {
-        //     inputs: vec![
-        //         ("Input1".into(), ParamTypes::String),
-        //         ("Input2".into(), ParamTypes::Number),
-        //         ("Input3".into(), ParamTypes::Bool),
-        //     ],
-        //     outputs: vec![
-        //         ("Output1".into(), ParamTypes::String),
-        //         ("Output2".into(), ParamTypes::Bool),
-        //         ("Output3".into(), ParamTypes::String),
-        //     ],
-        // };
+        let default_runnable = Runnable {
+            inputs: vec![
+                ("Input1".into(), ParamTypes::String),
+                ("Input2".into(), ParamTypes::Number),
+                ("Input3".into(), ParamTypes::Bool),
+            ],
+            outputs: vec![
+                ("Output1".into(), ParamTypes::String),
+                ("Output2".into(), ParamTypes::Bool),
+                ("Output3".into(), ParamTypes::String),
+            ],
+        };
 
         Self {
             rects: vec![ 
-                Rect { 
-                    min: Pos2 {x: 0.0, y: 0.0}, 
-                    max: Pos2 {  
-                        x: 30.0, 
-                        y: 45.0, 
-                    }
-                },
-                Rect { 
-                    min: Pos2 {x: 45.0, y: 0.0}, 
-                    max: Pos2 {  
-                        x: 75.0, 
-                        y: 45.0, 
-                    }
-                }
+                FunctionConfig::new(default_runnable.clone(), Pos2 {x: 0.0, y: 0.0}),
+                FunctionConfig::new(default_runnable.clone(), Pos2 {x: 45.0, y: 0.0})
             ]
         }
     }
