@@ -15,7 +15,10 @@ impl FunctionConfig {
             position: initial_pos, 
             sizes: Vec2 { 
                 x: 30.0, 
-                y: max(runnable.inputs.len(), runnable.outputs.len()) as f32 * 15.0, 
+                y: 
+                    5.0 + // place for angle radius
+                    max(runnable.inputs.len(), runnable.outputs.len()) as f32 * 15.0 +
+                    5.0 // place for angle radius
             },
             runnable
         }
@@ -40,8 +43,8 @@ impl Widget for &mut FunctionWidget<'_> {
         let response = ui.allocate_rect(
             Rect { min: self.config.position, max: Pos2 { 
                 x: self.config.position.x + self.config.sizes.x, 
-                y: self.config.position.y + self.config.sizes.y } 
-            },
+                y: self.config.position.y + self.config.sizes.y 
+            }},
             Sense::drag()
         );
 
@@ -62,7 +65,7 @@ impl Widget for &mut FunctionWidget<'_> {
 
                     painter.rect(
                         moved_rect, 
-                        Rounding::same(1.0), 
+                        Rounding::same(5.0), 
                         Color32::from_rgb(195, 255, 104), 
                         stroke
                     );
@@ -77,7 +80,7 @@ impl Widget for &mut FunctionWidget<'_> {
         
             painter.rect(
                 response.rect, 
-                Rounding::same(1.0), 
+                Rounding::same(5.0), 
                 Color32::from_rgb(195, 255, 104), 
                 stroke
             )
