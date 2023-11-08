@@ -25,13 +25,22 @@ impl Default for TemplateApp {
         // };
 
         Self {
-            rects: vec![ Rect { 
-                min: Pos2 {x: 0.0, y: 0.0}, 
-                max: Pos2 {  
-                    x: 30.0, 
-                    y: 45.0, 
+            rects: vec![ 
+                Rect { 
+                    min: Pos2 {x: 0.0, y: 0.0}, 
+                    max: Pos2 {  
+                        x: 30.0, 
+                        y: 45.0, 
+                    }
+                },
+                Rect { 
+                    min: Pos2 {x: 45.0, y: 0.0}, 
+                    max: Pos2 {  
+                        x: 75.0, 
+                        y: 45.0, 
+                    }
                 }
-            }]
+            ]
         }
     }
 }
@@ -82,9 +91,11 @@ impl eframe::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            for ele in self.rects.iter_mut() {
-                ui.add(&mut FunctionWidget::new(ele));   
-            }
+            ui.horizontal(|ui| {
+                for ele in self.rects.iter_mut() {
+                    ui.add(&mut FunctionWidget::new(ele));   
+                }
+            });            
 
             powered_by_egui_and_eframe(ui)
         });
