@@ -17,8 +17,7 @@ impl FunctionConfig {
                 x: 30.0, 
                 y: 
                     5.0 + // place for angle radius
-                    max(runnable.inputs.len(), runnable.outputs.len()) as f32 * 15.0 +
-                    5.0 // place for angle radius
+                    max(runnable.inputs.len(), runnable.outputs.len()) as f32 * 15.0
             },
             runnable
         }
