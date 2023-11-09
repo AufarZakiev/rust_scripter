@@ -41,6 +41,8 @@ impl TemplateApp {
 
         cc.egui_ctx.set_pixels_per_point(2.0);
 
+        egui_extras::install_image_loaders(&cc.egui_ctx);
+
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
@@ -78,6 +80,10 @@ impl eframe::App for TemplateApp {
 
                 egui::widgets::global_dark_light_mode_buttons(ui);
             });
+        });
+
+        egui::SidePanel::left("Toolbox").show(ctx, |ui| {
+            ui.add(egui::Image::new(egui::include_image!("../assets/function-icon.png")).rounding(5.0))
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
