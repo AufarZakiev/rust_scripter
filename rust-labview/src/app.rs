@@ -20,7 +20,6 @@ impl Default for TemplateApp {
             outputs: vec![
                 ("Output1".into(), ParamTypes::String),
                 ("Output2".into(), ParamTypes::Bool),
-                ("Output3".into(), ParamTypes::String),
             ],
         };
 
@@ -89,21 +88,22 @@ impl eframe::App for TemplateApp {
             ui.add(icon);
         });
 
+        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
+            powered_by_egui_and_eframe(ui)
+        });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 for ele in self.rects.iter_mut() {
                     ui.add(&mut FunctionWidget::new(ele));   
                 }
             });            
-
-            powered_by_egui_and_eframe(ui)
         });
     }
 }
 
 fn powered_by_egui_and_eframe(ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 0.0;
         ui.label("Powered by ");
         ui.hyperlink_to("egui", "https://github.com/emilk/egui");
         ui.label(" and ");
