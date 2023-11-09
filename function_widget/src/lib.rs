@@ -78,20 +78,38 @@ impl Widget for &mut FunctionWidget<'_> {
                         stroke
                     );
 
-                    painter.rect( 
-                        Rect { 
-                            min: Pos2 {
-                                x: moved_rect.min.x, 
-                                y: moved_rect.min.y + 5.0, 
-                            },
-                            max: Pos2 {
-                                x: moved_rect.min.x + 10.0, 
-                                y: moved_rect.min.y + 5.0 + 15.0, 
-                            }
-                        }, 
-                        Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
-                    );
+                    for (idx, el) in self.config.runnable.inputs.iter().enumerate() {
+                        painter.rect( 
+                            Rect { 
+                                min: Pos2 {
+                                    x: moved_rect.min.x, 
+                                    y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
+                                },
+                                max: Pos2 {
+                                    x: moved_rect.min.x + 10.0, 
+                                    y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
+                                }
+                            }, 
+                            Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
+                        );        
+                    }
 
+                    for (idx, el) in self.config.runnable.outputs.iter().enumerate() {
+                        painter.rect( 
+                            Rect { 
+                                min: Pos2 {
+                                    x: moved_rect.min.x + 30.0 - 10.0, 
+                                    y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
+                                },
+                                max: Pos2 {
+                                    x: moved_rect.min.x + 30.0, 
+                                    y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
+                                }
+                            }, 
+                            Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
+                        );        
+                    }
+                    
                     let moved_response = ui.allocate_rect(moved_rect, Sense::drag());
 
                     self.config.position = moved_rect.left_top();
@@ -107,19 +125,37 @@ impl Widget for &mut FunctionWidget<'_> {
                 stroke
             );
 
-            painter.rect( 
-                Rect { 
-                    min: Pos2 {
-                        x: outer_response.rect.min.x, 
-                        y: outer_response.rect.min.y + 5.0, 
-                    },
-                    max: Pos2 {
-                        x: outer_response.rect.min.x + 10.0, 
-                        y: outer_response.rect.min.y + 5.0 + 15.0, 
-                    }
-                }, 
-                Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
-            );
+            for (idx, el) in self.config.runnable.inputs.iter().enumerate() {
+                painter.rect( 
+                    Rect { 
+                        min: Pos2 {
+                            x: outer_response.rect.min.x, 
+                            y: outer_response.rect.min.y + 5.0 + (idx as f32 * 15.0), 
+                        },
+                        max: Pos2 {
+                            x: outer_response.rect.min.x + 10.0, 
+                            y: outer_response.rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
+                        }
+                    }, 
+                    Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
+                );        
+            }
+
+            for (idx, el) in self.config.runnable.outputs.iter().enumerate() {
+                painter.rect( 
+                    Rect { 
+                        min: Pos2 {
+                            x: outer_response.rect.min.x + 30.0 - 10.0, 
+                            y: outer_response.rect.min.y + 5.0 + (idx as f32 * 15.0), 
+                        },
+                        max: Pos2 {
+                            x: outer_response.rect.min.x + 30.0, 
+                            y: outer_response.rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
+                        }
+                    }, 
+                    Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
+                );        
+            }
         }
 
         outer_response
