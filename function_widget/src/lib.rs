@@ -89,7 +89,7 @@ impl<'a> FunctionWidget<'a> {
 
             if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
                 if output_rect.contains(pointer_pos) {
-                    let tooltip_pos = output_rect.left_top() + Vec2{x: 2.0, y: -4.0};
+                    let tooltip_pos = output_rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
 
                     ui.painter().error(
                         tooltip_pos,
