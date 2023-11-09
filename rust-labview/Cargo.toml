@@ -14,7 +14,7 @@ eframe = { version = "0.23.0", default-features = false, features = [
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "persistence",   # Enable restoring app state when restarting the app.
 ] }
-egui_extras = { features = ["all_loaders"] }
+egui_extras = { version = "0.23.0", features = ["all_loaders"] }
 log = "0.4"
 function_widget = { path = "../function_widget" }
 

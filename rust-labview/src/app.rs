@@ -1,4 +1,4 @@
-use egui::{Rect, Pos2};
+use egui::{Pos2};
 use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -83,7 +83,10 @@ impl eframe::App for TemplateApp {
         });
 
         egui::SidePanel::left("Toolbox").show(ctx, |ui| {
-            ui.add(egui::Image::new(egui::include_image!("../assets/function-icon.png")).rounding(5.0))
+            let icon = 
+                egui::Image::new(egui::include_image!("../assets/function-icon.png"))
+                .rounding(5.0).max_height(16.0);
+            ui.add(icon);
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {

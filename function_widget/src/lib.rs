@@ -47,14 +47,14 @@ impl<'a> FunctionWidget<'a> {
 }
 
 impl<'a> FunctionWidget<'a> {
-    fn render_entry(&self, ui: &mut egui::Ui, moved_rect: Rect, idx: usize, stroke: egui::Stroke, isInput: bool) -> Response{
+    fn render_entry(&self, ui: &mut egui::Ui, moved_rect: Rect, idx: usize, stroke: egui::Stroke, is_input: bool) -> Response{
         let entry_response = ui.allocate_rect(Rect { 
             min: Pos2 {
-                x: moved_rect.min.x + if isInput { 0.0 } else { 20.0 }, 
+                x: moved_rect.min.x + if is_input { 0.0 } else { 20.0 }, 
                 y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
             },
             max: Pos2 {
-                x: moved_rect.min.x + 10.0 + if isInput { 0.0 } else { 20.0 }, 
+                x: moved_rect.min.x + 10.0 + if is_input { 0.0 } else { 20.0 }, 
                 y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
             }
         }, Sense::click());
