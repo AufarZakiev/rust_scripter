@@ -85,7 +85,7 @@ impl eframe::App for TemplateApp {
         egui::SidePanel::left("Toolbox").show(ctx, |ui| {
             let icon = 
                 egui::Image::new(egui::include_image!("../assets/function-icon.png"))
-                .rounding(5.0).max_height(16.0);
+                .rounding(5.0).max_height(48.0);
             ui.add(icon);
         });
 
