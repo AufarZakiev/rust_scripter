@@ -48,8 +48,8 @@ impl<'a> FunctionWidget<'a> {
 
 
 impl<'a> FunctionWidget<'a> {
-    fn render(&mut self, painter: &egui::Painter, moved_rect: Rect, stroke: egui::Stroke) {
-        painter.rect(
+    fn render(&mut self, ui: &mut egui::Ui, moved_rect: Rect, stroke: egui::Stroke) {
+        ui.painter().rect(
             moved_rect, 
             Rounding::same(5.0), 
             Color32::from_rgb(195, 255, 104), 
@@ -57,35 +57,51 @@ impl<'a> FunctionWidget<'a> {
         );
 
         for (idx, el) in self.config.runnable.inputs.iter().enumerate() {
-            painter.rect( 
-                Rect { 
-                    min: Pos2 {
-                        x: moved_rect.min.x, 
-                        y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
-                    },
-                    max: Pos2 {
-                        x: moved_rect.min.x + 10.0, 
-                        y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
-                    }
-                }, 
+            let input_response = ui.allocate_rect(Rect { 
+                min: Pos2 {
+                    x: moved_rect.min.x, 
+                    y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
+                },
+                max: Pos2 {
+                    x: moved_rect.min.x + 10.0, 
+                    y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
+                }
+            }, Sense::click());
+
+            ui.painter().rect( 
+                input_response.rect, 
                 Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
             );        
         }
 
         for (idx, el) in self.config.runnable.outputs.iter().enumerate() {
-            painter.rect( 
-                Rect { 
-                    min: Pos2 {
-                        x: moved_rect.min.x + 30.0 - 10.0, 
-                        y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
-                    },
-                    max: Pos2 {
-                        x: moved_rect.min.x + 30.0, 
-                        y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
-                    }
-                }, 
+            let output_rect = Rect { 
+                min: Pos2 {
+                    x: moved_rect.min.x + 30.0 - 10.0, 
+                    y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
+                },
+                max: Pos2 {
+                    x: moved_rect.min.x + 30.0, 
+                    y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
+                }
+            };
+            let output_response = ui.allocate_rect(output_rect, Sense::click());
+
+            if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
+                if output_rect.contains(pointer_pos) {
+                    let tooltip_pos = output_rect.left_top() + Vec2{x: 2.0, y: -4.0};
+
+                    ui.painter().error(
+                        tooltip_pos,
+                        "Click to start drawing a connection"
+                    );
+                }
+            }
+
+            ui.painter().rect( 
+                output_response.rect, 
                 Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
-            );        
+            );
         }
     }
 }
@@ -102,7 +118,6 @@ impl Widget for &mut FunctionWidget<'_> {
 
         if ui.is_rect_visible(outer_response.rect) {
             let stroke = ui.visuals().widgets.hovered.bg_stroke;
-            let painter = ui.painter();
 
             if outer_response.hovered() {
                 ui.output_mut(|o| { o.cursor_icon = CursorIcon::Grab })
@@ -115,7 +130,7 @@ impl Widget for &mut FunctionWidget<'_> {
                     let delta = pointer_pos - outer_response.rect.center();
                     let moved_rect = outer_response.rect.translate(delta);
 
-                    self.render(painter, moved_rect, stroke);
+                    self.render(ui, moved_rect, stroke);
                     
                     let moved_response = ui.allocate_rect(moved_rect, Sense::drag());
 
@@ -125,7 +140,7 @@ impl Widget for &mut FunctionWidget<'_> {
                 }
             }
         
-            self.render(painter, outer_response.rect, stroke)
+            self.render(ui, outer_response.rect, stroke)
         }
 
         outer_response
