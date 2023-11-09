@@ -1,7 +1,7 @@
 use std::cmp::max;
 
 pub use runnable::{Runnable, ParamTypes};
-use egui::{widgets::Widget, Sense, Rounding, Color32, CursorIcon, Rect, Pos2, Vec2};
+use egui::{widgets::Widget, Sense, Rounding, Color32, CursorIcon, Rect, Pos2, Vec2, Response};
 
 pub struct FunctionConfig {
     pub runnable: Runnable,
@@ -46,8 +46,26 @@ impl<'a> FunctionWidget<'a> {
     }
 }
 
-
 impl<'a> FunctionWidget<'a> {
+    fn render_entry(&self, ui: &mut egui::Ui, moved_rect: Rect, idx: usize, stroke: egui::Stroke, isInput: bool) -> Response{
+        let entry_response = ui.allocate_rect(Rect { 
+            min: Pos2 {
+                x: moved_rect.min.x + if isInput { 0.0 } else { 20.0 }, 
+                y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
+            },
+            max: Pos2 {
+                x: moved_rect.min.x + 10.0 + if isInput { 0.0 } else { 20.0 }, 
+                y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
+            }
+        }, Sense::click());
+    
+        ui.painter().rect( 
+            entry_response.rect, 
+            Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
+        );
+        entry_response
+    }
+
     fn render(&mut self, ui: &mut egui::Ui, moved_rect: Rect, stroke: egui::Stroke) {
         ui.painter().rect(
             moved_rect, 
@@ -57,53 +75,33 @@ impl<'a> FunctionWidget<'a> {
         );
 
         for (idx, el) in self.config.runnable.inputs.iter().enumerate() {
-            let input_response = ui.allocate_rect(Rect { 
-                min: Pos2 {
-                    x: moved_rect.min.x, 
-                    y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
-                },
-                max: Pos2 {
-                    x: moved_rect.min.x + 10.0, 
-                    y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
-                }
-            }, Sense::click());
-
-            ui.painter().rect( 
-                input_response.rect, 
-                Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
-            );        
+            self.render_entry(ui, moved_rect, idx, stroke, true);        
         }
 
         for (idx, el) in self.config.runnable.outputs.iter().enumerate() {
-            let output_rect = Rect { 
-                min: Pos2 {
-                    x: moved_rect.min.x + 30.0 - 10.0, 
-                    y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
-                },
-                max: Pos2 {
-                    x: moved_rect.min.x + 30.0, 
-                    y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
-                }
-            };
-            let output_response = ui.allocate_rect(output_rect, Sense::click());
+            let output_response = self.render_entry(ui, moved_rect, idx, stroke, false);        
 
-            if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
-                if output_rect.contains(pointer_pos) {
-                    let tooltip_pos = output_rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
+            inject_tooltips(ui, output_response, stroke);
+        }
+    }
+}
 
-                    ui.painter().error(
-                        tooltip_pos,
-                        "Click to start drawing a connection"
-                    );
-                }
-            }
+fn inject_tooltips(ui: &mut egui::Ui, output_response: Response, stroke: egui::Stroke) {
+    if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
+        if output_response.rect.contains(pointer_pos) {
+            let tooltip_pos = output_response.rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
 
-            ui.painter().rect( 
-                output_response.rect, 
-                Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
+            ui.painter().error(
+                tooltip_pos,
+                "Click to start drawing a connection"
             );
         }
     }
+
+    ui.painter().rect( 
+        output_response.rect, 
+        Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
+    );
 }
 
 impl Widget for &mut FunctionWidget<'_> {
