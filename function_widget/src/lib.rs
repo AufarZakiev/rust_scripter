@@ -134,7 +134,7 @@ impl Widget for &mut FunctionWidget<'_> {
                 x: self.config.position.x + self.config.sizes.x, 
                 y: self.config.position.y + self.config.sizes.y 
             }},
-            Sense::drag()
+            Sense::click_and_drag()
         );
 
         if ui.is_rect_visible(outer_response.rect) {
@@ -144,7 +144,7 @@ impl Widget for &mut FunctionWidget<'_> {
                 ui.output_mut(|o| { o.cursor_icon = CursorIcon::Grab })
             }
 
-            if outer_response.dragged() || outer_response.drag_released() {
+            if outer_response.dragged_by(egui::PointerButton::Primary) {
                 ui.ctx().set_cursor_icon(CursorIcon::Grabbing);
 
                 if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
