@@ -9,7 +9,31 @@ pub struct FunctionConfig {
     pub sizes: Vec2,
 }
 
+impl Default for FunctionConfig {
+    fn default() -> FunctionConfig {
+        let default_runnable = Runnable {
+            inputs: vec![
+                ("Input1".into(), ParamTypes::String),
+                ("Input2".into(), ParamTypes::Number),
+                ("Input3".into(), ParamTypes::Bool),
+            ],
+            outputs: vec![
+                ("Output1".into(), ParamTypes::String),
+                ("Output2".into(), ParamTypes::Bool),
+            ],
+        };
+
+        FunctionConfig::new(default_runnable, Pos2 {x: 120.0, y: 40.0})
+    }
+}
+
 impl FunctionConfig {
+    pub fn default_with_pos( initial_pos: Pos2) -> Self {
+        let mut def = FunctionConfig::default();
+        def.position = initial_pos;
+        def
+    }
+
     pub fn new(runnable: Runnable, initial_pos: Pos2) -> Self {
         Self { 
             position: initial_pos, 

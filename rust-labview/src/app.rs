@@ -1,4 +1,4 @@
-use egui::{Pos2};
+use egui::{Pos2, Window, Sense};
 use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -11,22 +11,10 @@ pub struct TemplateApp {
 
 impl Default for TemplateApp {
     fn default() -> Self {
-        let default_runnable = Runnable {
-            inputs: vec![
-                ("Input1".into(), ParamTypes::String),
-                ("Input2".into(), ParamTypes::Number),
-                ("Input3".into(), ParamTypes::Bool),
-            ],
-            outputs: vec![
-                ("Output1".into(), ParamTypes::String),
-                ("Output2".into(), ParamTypes::Bool),
-            ],
-        };
-
         Self {
             rects: vec![ 
-                FunctionConfig::new(default_runnable.clone(), Pos2 {x: 0.0, y: 0.0}),
-                FunctionConfig::new(default_runnable.clone(), Pos2 {x: 45.0, y: 0.0})
+                FunctionConfig::default(),
+                FunctionConfig::default_with_pos(Pos2 {x: 165.0, y: 40.0})
             ]
         }
     }
@@ -84,8 +72,11 @@ impl eframe::App for TemplateApp {
         egui::SidePanel::left("Toolbox").show(ctx, |ui| {
             let icon = 
                 egui::Image::new(egui::include_image!("../assets/function-icon.png"))
-                .rounding(5.0).max_height(48.0);
-            ui.add(icon);
+                .rounding(5.0).max_height(48.0).sense(Sense::click());
+            let icon_response = ui.add(icon);
+            if icon_response.clicked() {
+                self.rects.push(FunctionConfig::default());
+            }
         });
 
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
