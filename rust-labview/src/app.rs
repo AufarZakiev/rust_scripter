@@ -75,8 +75,8 @@ impl eframe::App for TemplateApp {
 
         egui::SidePanel::left("Toolbox").show(ctx, |ui| {
             let icon = 
-                egui::Image::new(egui::include_image!("../assets/function-icon.png"))
-                .rounding(5.0).max_height(48.0).sense(Sense::click());
+                egui::Button::image_and_text(egui::include_image!("../assets/function-icon.png"), "Add function")
+                .rounding(5.0);
             let icon_response = ui.add(icon);
             if icon_response.clicked() {
                 self.rects.push(FunctionConfig::default_with_pos(Pos2 { x: 0.0, y: 0.0 }, format!("Function #{}", self.rects.len())));
