@@ -1,17 +1,20 @@
 use std::cmp::max;
 
 pub use runnable::{Runnable, ParamTypes};
-use egui::{widgets::Widget, Sense, Rounding, Color32, CursorIcon, Rect, Pos2, Vec2, Response};
+use egui::{widgets::Widget, Sense, Rounding, Color32, CursorIcon, Rect, Pos2, Vec2, Response, Window};
 
 pub struct FunctionConfig {
     pub runnable: Runnable,
     pub position: Pos2,
     pub sizes: Vec2,
+    pub is_collapsed: bool,
+    pub is_open: bool,
 }
 
 impl Default for FunctionConfig {
     fn default() -> FunctionConfig {
         let default_runnable = Runnable {
+            name: "Function #0".to_owned(),
             inputs: vec![
                 ("Input1".into(), ParamTypes::String),
                 ("Input2".into(), ParamTypes::Number),
@@ -23,18 +26,19 @@ impl Default for FunctionConfig {
             ],
         };
 
-        FunctionConfig::new(default_runnable, Pos2 {x: 120.0, y: 40.0})
+        FunctionConfig::new(default_runnable, Pos2 {x: 120.0, y: 40.0}, false, true)
     }
 }
 
 impl FunctionConfig {
-    pub fn default_with_pos( initial_pos: Pos2) -> Self {
+    pub fn default_with_pos(initial_pos: Pos2, name: String) -> Self {
         let mut def = FunctionConfig::default();
+        def.runnable.name = name;
         def.position = initial_pos;
         def
     }
 
-    pub fn new(runnable: Runnable, initial_pos: Pos2) -> Self {
+    pub fn new(runnable: Runnable, initial_pos: Pos2, is_collapsed: bool, is_open: bool) -> Self {
         Self { 
             position: initial_pos, 
             sizes: Vec2 { 
@@ -43,7 +47,9 @@ impl FunctionConfig {
                     5.0 + // place for angle radius
                     max(runnable.inputs.len(), runnable.outputs.len()) as f32 * 15.0
             },
-            runnable
+            runnable,
+            is_collapsed,
+            is_open
         }
     }
 }
@@ -82,27 +88,22 @@ impl<'a> FunctionWidget<'a> {
             }
         }, Sense::click());
     
-        ui.painter().rect( 
-            entry_response.rect, 
-            Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
+        ui.painter().circle( 
+            entry_response.rect.center(), 
+            5.0,
+            Color32::from_rgb(128, 0, 0), 
+            stroke
         );
         entry_response
     }
 
-    fn render(&mut self, ui: &mut egui::Ui, moved_rect: Rect, stroke: egui::Stroke) {
-        ui.painter().rect(
-            moved_rect, 
-            Rounding::same(5.0), 
-            Color32::from_rgb(195, 255, 104), 
-            stroke
-        );
-
+    fn render(&mut self, ui: &mut egui::Ui, window_rect: Rect, stroke: egui::Stroke) {
         for (idx, el) in self.config.runnable.inputs.iter().enumerate() {
-            self.render_entry(ui, moved_rect, idx, stroke, true);        
+            self.render_entry(ui, window_rect, idx, stroke, true);        
         }
 
         for (idx, el) in self.config.runnable.outputs.iter().enumerate() {
-            let output_response = self.render_entry(ui, moved_rect, idx, stroke, false);        
+            let output_response = self.render_entry(ui, window_rect, idx, stroke, false);        
 
             inject_tooltips(ui, output_response, stroke);
         }
@@ -129,41 +130,30 @@ fn inject_tooltips(ui: &mut egui::Ui, output_response: Response, stroke: egui::S
 
 impl Widget for &mut FunctionWidget<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        let outer_response = ui.allocate_rect(
-            Rect { min: self.config.position, max: Pos2 { 
-                x: self.config.position.x + self.config.sizes.x, 
-                y: self.config.position.y + self.config.sizes.y 
-            }},
-            Sense::click_and_drag()
-        );
+        let window_response = Window::new(&self.config.runnable.name)
+            .auto_sized()
+            .collapsible(true)
+            .show(ui.ctx(), |ui| {
 
-        if ui.is_rect_visible(outer_response.rect) {
-            let stroke = ui.visuals().widgets.hovered.bg_stroke;
-
-            if outer_response.hovered() {
-                ui.output_mut(|o| { o.cursor_icon = CursorIcon::Grab })
-            }
-
-            if outer_response.dragged_by(egui::PointerButton::Primary) {
-                ui.ctx().set_cursor_icon(CursorIcon::Grabbing);
-
-                if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
-                    let delta = pointer_pos - outer_response.rect.center();
-                    let moved_rect = outer_response.rect.translate(delta);
-
-                    self.render(ui, moved_rect, stroke);
-                    
-                    let moved_response = ui.allocate_rect(moved_rect, Sense::drag());
-
-                    self.config.position = moved_rect.left_top();
-
-                    return moved_response;
-                }
-            }
+            ui.horizontal(|ui| { 
+                ui.vertical(|ui| {
+                    for ele in self.config.runnable.inputs.iter() {
+                        ui.label(ele.0.clone());
+                    }
+                });
+                ui.vertical(|ui| {
+                    for ele in self.config.runnable.outputs.iter() {
+                        ui.label(ele.0.clone());
+                    }
+                });
+            })
+        }).unwrap();
         
-            self.render(ui, outer_response.rect, stroke)
-        }
+        let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
-        outer_response
+        let window_rect = window_response.response.rect;
+        self.render(ui, window_rect, stroke);
+
+        window_response.response
     }
 }

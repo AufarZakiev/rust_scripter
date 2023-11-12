@@ -1,4 +1,4 @@
-use egui::{Pos2, Window, Sense};
+use egui::{Pos2, Window, Sense, epaint::Shadow, Style, Visuals};
 use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -15,7 +15,6 @@ impl Default for TemplateApp {
         Self {
             rects: vec![ 
                 FunctionConfig::default(),
-                FunctionConfig::default_with_pos(Pos2 {x: 165.0, y: 40.0})
             ],
             rects_to_remove: vec![]
         }
@@ -27,8 +26,6 @@ impl TemplateApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
-        cc.egui_ctx.set_pixels_per_point(2.0);
 
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
@@ -82,7 +79,7 @@ impl eframe::App for TemplateApp {
                 .rounding(5.0).max_height(48.0).sense(Sense::click());
             let icon_response = ui.add(icon);
             if icon_response.clicked() {
-                self.rects.push(FunctionConfig::default());
+                self.rects.push(FunctionConfig::default_with_pos(Pos2 { x: 0.0, y: 0.0 }, format!("Function #{}", self.rects.len())));
             }
         });
 
@@ -93,12 +90,14 @@ impl eframe::App for TemplateApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 for (idx, ele) in self.rects.iter_mut().enumerate() {
-                    ui.add(&mut FunctionWidget::new(ele))
-                        .context_menu(|ui| {
-                            if ui.button("Delete").clicked() {
-                                self.rects_to_remove.push(idx);
-                            }
-                        });  
+                        ui.add(&mut FunctionWidget::new(ele));
+
+                   
+                        // .context_menu(|ui| {
+                        //     if ui.button("Delete").clicked() {
+                        //         self.rects_to_remove.push(idx);
+                        //     }
+                        // });  
                 }
             });            
         });
