@@ -1,7 +1,8 @@
 use std::cmp::max;
 
 pub use runnable::{Runnable, ParamTypes};
-use egui::{widgets::Widget, Sense, Rounding, Color32, CursorIcon, Rect, Pos2, Vec2, Response, Window};
+use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window};
+use std::collections::HashMap;
 
 pub struct FunctionConfig {
     pub runnable: Runnable,
@@ -15,15 +16,15 @@ impl Default for FunctionConfig {
     fn default() -> FunctionConfig {
         let default_runnable = Runnable {
             name: "Function #0".to_owned(),
-            inputs: vec![
+            inputs: HashMap::from([
                 ("Input1".into(), ParamTypes::String),
                 ("Input2".into(), ParamTypes::Number),
                 ("Input3".into(), ParamTypes::Bool),
-            ],
-            outputs: vec![
+            ]),
+            outputs: HashMap::from([
                 ("Output1".into(), ParamTypes::String),
                 ("Output2".into(), ParamTypes::Bool),
-            ],
+            ]),
         };
 
         FunctionConfig::new(default_runnable, Pos2 {x: 120.0, y: 40.0}, false, true)

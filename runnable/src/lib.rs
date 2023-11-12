@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Clone)]
 pub enum ParamTypes {
     Number,
@@ -8,6 +10,6 @@ pub enum ParamTypes {
 #[derive(Clone)]
 pub struct Runnable {
     pub name: String,
-    pub inputs: Vec<(String, ParamTypes)>,
-    pub outputs: Vec<(String, ParamTypes)>,
+    pub inputs: HashMap<String, ParamTypes>,
+    pub outputs: HashMap<String, ParamTypes>,
 }
