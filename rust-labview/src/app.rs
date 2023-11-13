@@ -27,6 +27,8 @@ impl TemplateApp {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
+        // cc.egui_ctx.set_debug_on_hover(true);
+
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
         // Load previous app state (if any).
@@ -91,13 +93,6 @@ impl eframe::App for TemplateApp {
             ui.horizontal(|ui| {
                 for (idx, ele) in self.rects.iter_mut().enumerate() {
                         ui.add(&mut FunctionWidget::new(ele));
-
-                   
-                        // .context_menu(|ui| {
-                        //     if ui.button("Delete").clicked() {
-                        //         self.rects_to_remove.push(idx);
-                        //     }
-                        // });  
                 }
             });            
         });

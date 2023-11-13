@@ -1,7 +1,7 @@
 use std::cmp::max;
 
 pub use runnable::{Runnable, ParamTypes};
-use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window};
+use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window, Order, Area, LayerId, Id};
 use std::collections::HashMap;
 
 pub struct FunctionConfig {
@@ -97,36 +97,6 @@ impl<'a> FunctionWidget<'a> {
         );
         entry_response
     }
-
-    fn render(&mut self, ui: &mut egui::Ui, window_rect: Rect, stroke: egui::Stroke) {
-        for (idx, el) in self.config.runnable.inputs.iter().enumerate() {
-            self.render_entry(ui, window_rect, idx, stroke, true);        
-        }
-
-        for (idx, el) in self.config.runnable.outputs.iter().enumerate() {
-            let output_response = self.render_entry(ui, window_rect, idx, stroke, false);        
-
-            inject_tooltips(ui, output_response, stroke);
-        }
-    }
-}
-
-fn inject_tooltips(ui: &mut egui::Ui, output_response: Response, stroke: egui::Stroke) {
-    if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
-        if output_response.rect.contains(pointer_pos) {
-            let tooltip_pos = output_response.rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
-
-            ui.painter().error(
-                tooltip_pos,
-                "Click to start drawing a connection"
-            );
-        }
-    }
-
-    ui.painter().rect( 
-        output_response.rect, 
-        Rounding::ZERO, Color32::from_rgb(128, 0, 0), stroke
-    );
 }
 
 impl Widget for &mut FunctionWidget<'_> {
@@ -134,26 +104,69 @@ impl Widget for &mut FunctionWidget<'_> {
         let window_response = Window::new(&self.config.runnable.name)
             .auto_sized()
             .collapsible(true)
-            .show(ui.ctx(), |ui| {
+            .show(ui.ctx(), |ui| {                
+                let circle_painter = ui.ctx()
+                    .layer_painter(LayerId::new(Order::Foreground, Id::new(self.config.runnable.name.clone())));
+                
+                ui.horizontal(|ui| { 
+                    ui.vertical(|ui| {
+                        for ele in self.config.runnable.inputs.iter() {
+                            let label_response = ui.label(ele.0.clone());
+                            let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
-            ui.horizontal(|ui| { 
-                ui.vertical(|ui| {
-                    for ele in self.config.runnable.inputs.iter() {
-                        ui.label(ele.0.clone());
-                    }
-                });
-                ui.vertical(|ui| {
-                    for ele in self.config.runnable.outputs.iter() {
-                        ui.label(ele.0.clone());
-                    }
-                });
-            })
+                            let circle_rect = Rect::from_center_size(
+                                label_response.rect.left_center() + Vec2 { x: -7.0, y: 0.0 },
+                                Vec2 { x: 5.0, y: 5.0 }
+                            );
+                            circle_painter.circle(
+                                circle_rect.center(),
+                                5.0,
+                                Color32::from_rgb(128, 0, 0), 
+                                stroke
+                            );
+
+                            if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
+                                if circle_rect.contains(pointer_pos) {
+                                    let tooltip_pos = circle_rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
+                        
+                                    ui.painter().error(
+                                        tooltip_pos,
+                                        "Click to start drawing a connection"
+                                    );
+                                }
+                            }
+                        }
+                    });
+                    ui.vertical(|ui| {
+                        for ele in self.config.runnable.outputs.iter() {
+                            let label_response = ui.label(ele.0.clone());
+                            let stroke = ui.visuals().widgets.hovered.bg_stroke;
+    
+                            let circle_rect = Rect::from_center_size(
+                                label_response.rect.right_center() + Vec2 { x: 7.0, y: 0.0 },
+                                Vec2 { x: 5.0, y: 5.0 }
+                            );
+                            circle_painter.circle(
+                                circle_rect.center(),
+                                5.0,
+                                Color32::from_rgb(128, 0, 0), 
+                                stroke
+                            );
+
+                            if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
+                                if circle_rect.contains(pointer_pos) {
+                                    let tooltip_pos = circle_rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
+                        
+                                    ui.painter().error(
+                                        tooltip_pos,
+                                        "Click to start drawing a connection"
+                                    );
+                                }
+                            }
+                        }
+                    });
+                })
         }).unwrap();
-        
-        let stroke = ui.visuals().widgets.hovered.bg_stroke;
-
-        let window_rect = window_response.response.rect;
-        self.render(ui, window_rect, stroke);
 
         window_response.response
     }
