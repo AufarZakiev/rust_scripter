@@ -102,69 +102,65 @@ impl<'a> FunctionWidget<'a> {
 impl Widget for &mut FunctionWidget<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let window_response = Window::new(&self.config.runnable.name)
-            .auto_sized()
+            .fixed_size(Vec2 {x: 160.0, y: self.config.runnable.inputs.len() as f32 * 10.0 + 10.0})
             .collapsible(true)
             .show(ui.ctx(), |ui| {                
                 let circle_painter = ui.ctx()
                     .layer_painter(LayerId::new(Order::Foreground, Id::new(self.config.runnable.name.clone())));
                 
-                ui.horizontal(|ui| { 
-                    ui.vertical(|ui| {
-                        for ele in self.config.runnable.inputs.iter() {
-                            let label_response = ui.label(ele.0.clone());
-                            let stroke = ui.visuals().widgets.hovered.bg_stroke;
+                let stroke = ui.visuals().widgets.hovered.bg_stroke;
+                
+                ui.columns(2, |columns| {
+                    for ele in self.config.runnable.inputs.iter() {
+                        let label_response = columns[0].label(ele.0.clone());
 
-                            let circle_rect = Rect::from_center_size(
-                                label_response.rect.left_center() + Vec2 { x: -7.0, y: 0.0 },
-                                Vec2 { x: 5.0, y: 5.0 }
-                            );
-                            circle_painter.circle(
-                                circle_rect.center(),
-                                5.0,
-                                Color32::from_rgb(128, 0, 0), 
-                                stroke
-                            );
+                        let circle_rect = Rect::from_center_size(
+                            label_response.rect.left_center() + Vec2 { x: -7.0, y: 0.0 },
+                            Vec2 { x: 5.0, y: 5.0 }
+                        );
+                        circle_painter.circle(
+                            circle_rect.center(),
+                            5.0,
+                            Color32::from_rgb(128, 0, 0), 
+                            stroke
+                        );
 
-                            if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
-                                if circle_rect.contains(pointer_pos) {
-                                    let tooltip_pos = circle_rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
-                        
-                                    ui.painter().error(
-                                        tooltip_pos,
-                                        "Click to start drawing a connection"
-                                    );
-                                }
+                        if let Some(pointer_pos) = columns[0].ctx().pointer_interact_pos() {
+                            if circle_rect.contains(pointer_pos) {
+                                let tooltip_pos = circle_rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
+                    
+                                columns[0].painter().error(
+                                    tooltip_pos,
+                                    "Click to start drawing a connection"
+                                );
                             }
                         }
-                    });
-                    ui.vertical(|ui| {
-                        for ele in self.config.runnable.outputs.iter() {
-                            let label_response = ui.label(ele.0.clone());
-                            let stroke = ui.visuals().widgets.hovered.bg_stroke;
-    
-                            let circle_rect = Rect::from_center_size(
-                                label_response.rect.right_center() + Vec2 { x: 7.0, y: 0.0 },
-                                Vec2 { x: 5.0, y: 5.0 }
-                            );
-                            circle_painter.circle(
-                                circle_rect.center(),
-                                5.0,
-                                Color32::from_rgb(128, 0, 0), 
-                                stroke
-                            );
+                    };
+                    for ele in self.config.runnable.outputs.iter() {
+                        let label_response = columns[1].label(ele.0.clone());
 
-                            if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
-                                if circle_rect.contains(pointer_pos) {
-                                    let tooltip_pos = circle_rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
-                        
-                                    ui.painter().error(
-                                        tooltip_pos,
-                                        "Click to start drawing a connection"
-                                    );
-                                }
+                        let circle_rect = Rect::from_center_size(
+                            label_response.rect.right_center() + Vec2 { x: 7.0, y: 0.0 },
+                            Vec2 { x: 5.0, y: 5.0 }
+                        );
+                        circle_painter.circle(
+                            circle_rect.center(),
+                            5.0,
+                            Color32::from_rgb(128, 0, 0), 
+                            stroke
+                        );
+
+                        if let Some(pointer_pos) = columns[1].ctx().pointer_interact_pos() {
+                            if circle_rect.contains(pointer_pos) {
+                                let tooltip_pos = circle_rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
+                    
+                                columns[1].painter().error(
+                                    tooltip_pos,
+                                    "Click to start drawing a connection"
+                                );
                             }
                         }
-                    });
+                    }
                 })
         }).unwrap();
 
