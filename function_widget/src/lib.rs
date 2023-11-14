@@ -1,7 +1,7 @@
 use std::cmp::max;
 
 pub use runnable::{Runnable, ParamTypes};
-use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window, Order, Area, LayerId, Id};
+use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window, Order, Area, LayerId, Id, text::LayoutJob, TextFormat, Align, RichText};
 use std::collections::HashMap;
 
 pub struct FunctionConfig {
@@ -137,10 +137,12 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
                     };
                     for ele in self.config.runnable.outputs.iter() {
-                        let label_response = columns[1].label(ele.0.clone());
+                        let label_response = columns[1].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
+                            ui.label(ele.0.clone());
+                        });
 
                         let circle_rect = Rect::from_center_size(
-                            label_response.rect.right_center() + Vec2 { x: 7.0, y: 0.0 },
+                            label_response.response.rect.right_center() + Vec2 { x: 7.0, y: 0.0 },
                             Vec2 { x: 5.0, y: 5.0 }
                         );
                         circle_painter.circle(
