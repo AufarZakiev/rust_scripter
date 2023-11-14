@@ -14,7 +14,7 @@ impl Default for FunctionConfig {
     fn default() -> FunctionConfig {
         let default_runnable = Runnable::default();
 
-        FunctionConfig::new(default_runnable, Pos2 {x: 120.0, y: 40.0}, false, true)
+        FunctionConfig::new(default_runnable, Pos2 {x: 120.0, y: 40.0}, true)
     }
 }
 
@@ -26,7 +26,7 @@ impl FunctionConfig {
         def
     }
 
-    pub fn new(runnable: Runnable, initial_pos: Pos2, is_collapsed: bool, is_open: bool) -> Self {
+    pub fn new(runnable: Runnable, initial_pos: Pos2, is_open: bool) -> Self {
         Self { 
             position: initial_pos, 
             sizes: Vec2 { 
