@@ -7,7 +7,6 @@ pub struct FunctionConfig {
     pub runnable: Runnable,
     pub position: Pos2,
     pub sizes: Vec2,
-    pub is_collapsed: bool,
     pub is_open: bool,
 }
 
@@ -37,7 +36,6 @@ impl FunctionConfig {
                     max(runnable.inputs.len(), runnable.outputs.len()) as f32 * 15.0
             },
             runnable,
-            is_collapsed,
             is_open
         }
     }
@@ -65,32 +63,13 @@ impl<'a> FunctionWidget<'a> {
 }
 
 impl<'a> FunctionWidget<'a> {
-    fn render_entry(&self, ui: &mut egui::Ui, moved_rect: Rect, idx: usize, stroke: egui::Stroke, is_input: bool) -> Response{
-        let entry_response = ui.allocate_rect(Rect { 
-            min: Pos2 {
-                x: moved_rect.min.x + if is_input { 0.0 } else { 20.0 }, 
-                y: moved_rect.min.y + 5.0 + (idx as f32 * 15.0), 
-            },
-            max: Pos2 {
-                x: moved_rect.min.x + 10.0 + if is_input { 0.0 } else { 20.0 }, 
-                y: moved_rect.min.y + 5.0 + 10.0 + (idx as f32 * 15.0), 
-            }
-        }, Sense::click());
-    
-        ui.painter().circle( 
-            entry_response.rect.center(), 
-            5.0,
-            Color32::from_rgb(128, 0, 0), 
-            stroke
-        );
-        entry_response
-    }
 }
 
 impl Widget for &mut FunctionWidget<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let window_response = Window::new(&self.config.runnable.name)
             .fixed_size(Vec2 {x: 160.0, y: self.config.runnable.inputs.len() as f32 * 10.0 + 10.0})
+            .open(&mut self.config.is_open)
             .collapsible(true)
             .show(ui.ctx(), |ui| {                
                 let circle_painter = ui.ctx()

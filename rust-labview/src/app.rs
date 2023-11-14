@@ -7,7 +7,6 @@ use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig};
 pub struct TemplateApp {
     #[serde(skip)] // This how you opt-out of serialization of a field
     rects: Vec<FunctionConfig>,
-    rects_to_remove: Vec<usize>
 }
 
 impl Default for TemplateApp {
@@ -16,7 +15,6 @@ impl Default for TemplateApp {
             rects: vec![ 
                 FunctionConfig::default(),
             ],
-            rects_to_remove: vec![]
         }
     }
 }
@@ -52,10 +50,7 @@ impl eframe::App for TemplateApp {
         // Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
-        for ele in self.rects_to_remove.iter() {
-            self.rects.remove(*ele);
-        }
-        self.rects_to_remove.clear();
+        self.rects.retain(|ele| {ele.is_open});
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
@@ -92,7 +87,7 @@ impl eframe::App for TemplateApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 for (idx, ele) in self.rects.iter_mut().enumerate() {
-                        ui.add(&mut FunctionWidget::new(ele));
+                    ui.add(&mut FunctionWidget::new(ele));
                 }
             });            
         });
