@@ -1,12 +1,25 @@
-use egui::{Pos2, Window, Sense, epaint::Shadow, Style, Visuals};
+use egui::{Pos2, Window, Sense, epaint::{Shadow, CubicBezierShape, self}, Style, Visuals, Color32, pos2};
 use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig};
+
+struct LinkVertex {
+    function_name: String,
+    entry_name: String,
+}
+
+struct Link {
+    start: LinkVertex,
+    end: LinkVertex,
+}
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
-    #[serde(skip)] // This how you opt-out of serialization of a field
+    #[serde(skip)]
     rects: Vec<FunctionConfig>,
+    #[serde(skip)] 
+    links: Vec<Link>,
+    // curve_starting_pos: Option<Pos2>,
 }
 
 impl Default for TemplateApp {
@@ -14,7 +27,15 @@ impl Default for TemplateApp {
         Self {
             rects: vec![ 
                 FunctionConfig::default(),
+                FunctionConfig::default_with_pos(Pos2 {x: 180.0, y: 40.0}, "Function #1".to_owned()),
             ],
+            links: vec![
+                Link { 
+                    start: LinkVertex { function_name: "Function #0".to_owned(), entry_name: "Output1".to_owned() },
+                    end: LinkVertex { function_name: "Function #1".to_owned(), entry_name: "Input1".to_owned() }
+                }
+            ]
+            // curve_starting_pos: None,
         }
     }
 }
@@ -86,10 +107,35 @@ impl eframe::App for TemplateApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
-                for (idx, ele) in self.rects.iter_mut().enumerate() {
+                for ele in self.rects.iter_mut() {
                     ui.add(&mut FunctionWidget::new(ele));
                 }
-            });            
+            });
+
+            let stroke = ui.visuals().widgets.hovered.bg_stroke;
+
+            for link in self.links.iter() {
+                let start_point = self.rects.iter()
+                    .find(|p| p.runnable.name == link.start.function_name)
+                    .expect(format!("Non-connected link is found: function '{}' is not found", link.start.function_name).as_str())
+                    .runnable.outputs.get(&link.start.entry_name)
+                    .expect(format!("Non-connected link is found: output '{}' is not found in '{}'", link.start.entry_name, link.start.function_name).as_str())
+                    .pos;
+                let end_point = self.rects.iter()
+                    .find(|p| p.runnable.name == link.end.function_name)
+                    .expect(format!("Non-connected link is found: function '{}' is not found", link.end.function_name).as_str())
+                    .runnable.inputs.get(&link.end.entry_name)
+                    .expect(format!("Non-connected link is found: input '{}' is not found in '{}'", link.end.entry_name, link.end.function_name).as_str())
+                    .pos;
+
+                let second_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y};
+                let third_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: end_point.y };
+
+                let points: [Pos2; 4] = [start_point,second_point, third_point, end_point];
+                let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+                
+                ui.painter().add(curve);
+            }
         });
     }
 }

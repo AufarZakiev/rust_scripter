@@ -975,6 +975,7 @@ name = "function_widget"
 version = "0.1.0"
 dependencies = [
  "egui",
+ "ordered_hash_map",
  "runnable",
 ]
 

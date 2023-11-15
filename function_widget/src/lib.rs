@@ -1,10 +1,37 @@
 use std::cmp::max;
+use ordered_hash_map::OrderedHashMap;
 
 pub use runnable::{Runnable, ParamTypes};
 use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window, Order, Area, LayerId, Id, text::LayoutJob, TextFormat, Align, RichText};
 
+pub struct FunctionInputConfig {
+    pub input_type: ParamTypes,
+    pub pos: Pos2,
+}
+
+pub struct RunnableWithPositions {
+    pub name: String,
+    pub inputs: OrderedHashMap<String, FunctionInputConfig>,
+    pub outputs: OrderedHashMap<String, FunctionInputConfig>,
+}
+
+impl Default for RunnableWithPositions {
+    fn default() -> Self {
+        let default_runnable = Runnable::default();
+        let mut inputs = OrderedHashMap::new();
+        for ele in default_runnable.inputs {
+            inputs.insert(ele.0, FunctionInputConfig { input_type: ele.1, pos: Pos2 { x: 0.0, y: 0.0 } });
+        }
+        let mut outputs = OrderedHashMap::new();
+        for ele in default_runnable.outputs {
+            outputs.insert(ele.0, FunctionInputConfig { input_type: ele.1, pos: Pos2 { x: 0.0, y: 0.0 } });
+        }
+        Self { name: default_runnable.name, inputs, outputs }
+    }
+}
+
 pub struct FunctionConfig {
-    pub runnable: Runnable,
+    pub runnable: RunnableWithPositions,
     pub position: Pos2,
     pub sizes: Vec2,
     pub is_open: bool,
@@ -12,7 +39,7 @@ pub struct FunctionConfig {
 
 impl Default for FunctionConfig {
     fn default() -> FunctionConfig {
-        let default_runnable = Runnable::default();
+        let default_runnable = RunnableWithPositions::default();
 
         FunctionConfig::new(default_runnable, Pos2 {x: 120.0, y: 40.0}, true)
     }
@@ -26,7 +53,7 @@ impl FunctionConfig {
         def
     }
 
-    pub fn new(runnable: Runnable, initial_pos: Pos2, is_open: bool) -> Self {
+    pub fn new(runnable: RunnableWithPositions, initial_pos: Pos2, is_open: bool) -> Self {
         Self { 
             position: initial_pos, 
             sizes: Vec2 { 
@@ -39,10 +66,6 @@ impl FunctionConfig {
             is_open
         }
     }
-}
-
-pub struct FunctionInputConfig {
-    input_type: ParamTypes
 }
 
 pub struct FunctionInput {
@@ -78,7 +101,7 @@ impl Widget for &mut FunctionWidget<'_> {
                 let stroke = ui.visuals().widgets.hovered.bg_stroke;
                 
                 ui.columns(2, |columns| {
-                    for ele in self.config.runnable.inputs.iter() {
+                    for ele in self.config.runnable.inputs.iter_mut() {
                         let label_response = columns[0].label(ele.0.clone());
 
                         let circle_rect = Rect::from_center_size(
@@ -91,6 +114,7 @@ impl Widget for &mut FunctionWidget<'_> {
                             Color32::from_rgb(128, 0, 0), 
                             stroke
                         );
+                        ele.1.pos = circle_rect.center();
 
                         if let Some(pointer_pos) = columns[0].ctx().pointer_interact_pos() {
                             if circle_rect.contains(pointer_pos) {
@@ -103,7 +127,7 @@ impl Widget for &mut FunctionWidget<'_> {
                             }
                         }
                     };
-                    for ele in self.config.runnable.outputs.iter() {
+                    for ele in self.config.runnable.outputs.iter_mut() {
                         let label_response = columns[1].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
                             ui.label(ele.0.clone());
                         });
@@ -118,6 +142,7 @@ impl Widget for &mut FunctionWidget<'_> {
                             Color32::from_rgb(128, 0, 0), 
                             stroke
                         );
+                        ele.1.pos = circle_rect.center();
 
                         if let Some(pointer_pos) = columns[1].ctx().pointer_interact_pos() {
                             if circle_rect.contains(pointer_pos) {
