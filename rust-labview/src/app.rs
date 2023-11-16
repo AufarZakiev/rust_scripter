@@ -1,10 +1,5 @@
 use egui::{Pos2, Window, Sense, epaint::{Shadow, CubicBezierShape, self}, Style, Visuals, Color32, pos2};
-use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig};
-
-struct LinkVertex {
-    function_name: String,
-    entry_name: String,
-}
+use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig, LinkVertex};
 
 struct Link {
     start: LinkVertex,
@@ -120,14 +115,17 @@ impl eframe::App for TemplateApp {
                 }
             });
 
-            if let Some(link_start) = fw.iter().find(|widget| { widget.config.has_started_link.is_some() }) {
-                if let Some(link_end) = ui.ctx().pointer_latest_pos() {
-                    let link_start = link_start.config.has_started_link.unwrap();
+            if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_link_starting.is_some() }) {
+                if let Some(link_end) = fw.iter().find(|widget| { widget.config.has_link_ending.is_some() }) {
+                    self.links.push(Link { start: link_start_widget.config.has_link_starting.clone().unwrap(), end: link_end.config.has_link_ending.clone().unwrap() })
+                } else if let Some(link_end) = ui.ctx().pointer_latest_pos() {
+                    let link_start = link_start_widget.config.has_link_starting.clone().unwrap();
+                    let link_start_pos = link_start_widget.config.runnable.outputs.get(&link_start.entry_name).unwrap().pos;
                     
-                    let second_point = Pos2 { x: (link_start.x + link_end.x)/2.0, y: link_start.y};
-                    let third_point = Pos2 { x: (link_start.x + link_end.x)/2.0, y: link_end.y };
+                    let second_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_start_pos.y};
+                    let third_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_end.y };
     
-                    let points: [Pos2; 4] = [link_start, second_point, third_point, link_end];
+                    let points: [Pos2; 4] = [link_start_pos, second_point, third_point, link_end];
                     let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
                     
                     ui.painter().add(curve);

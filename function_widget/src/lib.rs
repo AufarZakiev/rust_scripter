@@ -4,6 +4,12 @@ use ordered_hash_map::OrderedHashMap;
 pub use runnable::{Runnable, ParamTypes};
 use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window, Order, Area, LayerId, Id, text::LayoutJob, TextFormat, Align, RichText, Label};
 
+#[derive(Clone)]
+pub struct LinkVertex {
+    pub function_name: String,
+    pub entry_name: String,
+}
+
 pub struct FunctionInputConfig {
     pub input_type: ParamTypes,
     pub pos: Pos2,
@@ -35,7 +41,8 @@ pub struct FunctionConfig {
     pub position: Pos2,
     pub sizes: Vec2,
     pub is_open: bool,
-    pub has_started_link: Option<Pos2>,
+    pub has_link_starting: Option<LinkVertex>,
+    pub has_link_ending: Option<LinkVertex>,
 }
 
 impl Default for FunctionConfig {
@@ -65,7 +72,8 @@ impl FunctionConfig {
             },
             runnable,
             is_open,
-            has_started_link: None,
+            has_link_starting: None,
+            has_link_ending: None,
         }
     }
 }
@@ -101,7 +109,8 @@ impl Widget for &mut FunctionWidget<'_> {
                 
                 ui.columns(2, |columns| {
                     for ele in self.config.runnable.inputs.iter_mut() {
-                        let label_response = columns[0].label(ele.0.clone());
+                        let label = Label::new(ele.0.clone()).sense(Sense::click());
+                        let label_response = columns[0].add(label);
 
                         let circle_rect = Rect::from_center_size(
                             label_response.rect.left_center() + Vec2 { x: -7.0, y: 0.0 },
@@ -114,6 +123,10 @@ impl Widget for &mut FunctionWidget<'_> {
                             stroke
                         );
                         ele.1.pos = circle_rect.center();
+
+                        if label_response.clicked() {
+                            self.config.has_link_ending = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() })
+                        }
 
                         if let Some(pointer_pos) = columns[0].ctx().pointer_interact_pos() {
                             if circle_rect.contains(pointer_pos) {
@@ -145,7 +158,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         ele.1.pos = circle_rect.center();
 
                         if label_response.inner.clicked() {
-                            self.config.has_started_link = Some(ele.1.pos);
+                            self.config.has_link_starting = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
                         }
 
                         if let Some(pointer_pos) = columns[1].ctx().pointer_interact_pos() {
