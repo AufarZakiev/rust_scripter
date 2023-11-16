@@ -106,13 +106,33 @@ impl eframe::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            let stroke = ui.visuals().widgets.hovered.bg_stroke;
+
+            let mut fw = vec![];
+            for ele in self.rects.iter_mut() {
+                let function_widget = FunctionWidget::new(ele);
+                fw.push(function_widget);
+            }
+
             ui.horizontal(|ui| {
-                for ele in self.rects.iter_mut() {
-                    ui.add(&mut FunctionWidget::new(ele));
+                for ele in fw.iter_mut() {
+                    ui.add(ele);
                 }
             });
 
-            let stroke = ui.visuals().widgets.hovered.bg_stroke;
+            if let Some(link_start) = fw.iter().find(|widget| { widget.config.has_started_link.is_some() }) {
+                if let Some(link_end) = ui.ctx().pointer_latest_pos() {
+                    let link_start = link_start.config.has_started_link.unwrap();
+                    
+                    let second_point = Pos2 { x: (link_start.x + link_end.x)/2.0, y: link_start.y};
+                    let third_point = Pos2 { x: (link_start.x + link_end.x)/2.0, y: link_end.y };
+    
+                    let points: [Pos2; 4] = [link_start, second_point, third_point, link_end];
+                    let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+                    
+                    ui.painter().add(curve);
+                }
+            }
 
             for link in self.links.iter() {
                 let start_point = self.rects.iter()
@@ -131,7 +151,7 @@ impl eframe::App for TemplateApp {
                 let second_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y};
                 let third_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: end_point.y };
 
-                let points: [Pos2; 4] = [start_point,second_point, third_point, end_point];
+                let points: [Pos2; 4] = [start_point, second_point, third_point, end_point];
                 let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
                 
                 ui.painter().add(curve);

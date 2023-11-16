@@ -2,7 +2,7 @@ use std::cmp::max;
 use ordered_hash_map::OrderedHashMap;
 
 pub use runnable::{Runnable, ParamTypes};
-use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window, Order, Area, LayerId, Id, text::LayoutJob, TextFormat, Align, RichText};
+use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window, Order, Area, LayerId, Id, text::LayoutJob, TextFormat, Align, RichText, Label};
 
 pub struct FunctionInputConfig {
     pub input_type: ParamTypes,
@@ -35,6 +35,7 @@ pub struct FunctionConfig {
     pub position: Pos2,
     pub sizes: Vec2,
     pub is_open: bool,
+    pub has_started_link: Option<Pos2>,
 }
 
 impl Default for FunctionConfig {
@@ -63,7 +64,8 @@ impl FunctionConfig {
                     max(runnable.inputs.len(), runnable.outputs.len()) as f32 * 15.0
             },
             runnable,
-            is_open
+            is_open,
+            has_started_link: None,
         }
     }
 }
@@ -74,18 +76,15 @@ pub struct FunctionInput {
 
 #[must_use = "You should put this widget in an ui with `ui.add(widget);`"]
 pub struct FunctionWidget<'a> {
-    pub config: &'a mut FunctionConfig
+    pub config: &'a mut FunctionConfig,
 }
 
 impl<'a> FunctionWidget<'a> {
     pub fn new(config: &'a mut FunctionConfig) -> Self {
         Self { 
-            config
+            config,
         }
     }
-}
-
-impl<'a> FunctionWidget<'a> {
 }
 
 impl Widget for &mut FunctionWidget<'_> {
@@ -129,7 +128,8 @@ impl Widget for &mut FunctionWidget<'_> {
                     };
                     for ele in self.config.runnable.outputs.iter_mut() {
                         let label_response = columns[1].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
-                            ui.label(ele.0.clone());
+                            let label = Label::new(ele.0.clone()).sense(Sense::click());
+                            ui.add(label)
                         });
 
                         let circle_rect = Rect::from_center_size(
@@ -143,6 +143,10 @@ impl Widget for &mut FunctionWidget<'_> {
                             stroke
                         );
                         ele.1.pos = circle_rect.center();
+
+                        if label_response.inner.clicked() {
+                            self.config.has_started_link = Some(ele.1.pos);
+                        }
 
                         if let Some(pointer_pos) = columns[1].ctx().pointer_interact_pos() {
                             if circle_rect.contains(pointer_pos) {
