@@ -39,8 +39,9 @@ impl Default for RunnableWithPositions {
 pub struct FunctionConfig {
     pub runnable: RunnableWithPositions,
     pub position: Pos2,
-    pub sizes: Vec2,
+    pub size: Vec2,
     pub is_open: bool,
+    pub is_collapsed: bool,
     pub has_link_starting: Option<LinkVertex>,
     pub has_link_ending: Option<LinkVertex>,
 }
@@ -49,7 +50,7 @@ impl Default for FunctionConfig {
     fn default() -> FunctionConfig {
         let default_runnable = RunnableWithPositions::default();
 
-        FunctionConfig::new(default_runnable, Pos2 {x: 120.0, y: 40.0}, true)
+        FunctionConfig::new(default_runnable, Pos2 {x: 120.0, y: 40.0}, true, true)
     }
 }
 
@@ -61,17 +62,18 @@ impl FunctionConfig {
         def
     }
 
-    pub fn new(runnable: RunnableWithPositions, initial_pos: Pos2, is_open: bool) -> Self {
+    pub fn new(
+        runnable: RunnableWithPositions, 
+        initial_pos: Pos2, 
+        is_open: bool,
+        is_collapsed: bool
+    ) -> Self {
         Self { 
             position: initial_pos, 
-            sizes: Vec2 { 
-                x: 30.0, 
-                y: 
-                    5.0 + // place for angle radius
-                    max(runnable.inputs.len(), runnable.outputs.len()) as f32 * 15.0
-            },
+            size: Vec2::default(),
             runnable,
             is_open,
+            is_collapsed,
             has_link_starting: None,
             has_link_ending: None,
         }
@@ -174,6 +176,10 @@ impl Widget for &mut FunctionWidget<'_> {
                     }
                 })
         }).unwrap();
+
+        self.config.is_collapsed = window_response.inner.is_none();
+        self.config.position = window_response.response.rect.left_top();
+        self.config.size = window_response.response.rect.size();
 
         window_response.response
     }

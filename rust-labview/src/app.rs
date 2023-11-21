@@ -141,18 +141,36 @@ impl eframe::App for TemplateApp {
             }
 
             for link in self.links.iter() {
-                let start_point = self.rects.iter()
+                let start_point_widget = self.rects.iter()
                     .find(|p| p.runnable.name == link.start.function_name)
-                    .expect(format!("Non-connected link is found: function '{}' is not found", link.start.function_name).as_str())
+                    .expect(format!("Non-connected link is found: function '{}' is not found", link.start.function_name).as_str());    
+                let start_point = if start_point_widget.is_collapsed {
+                    Pos2 {
+                        x: start_point_widget.position.x + start_point_widget.size.x,
+                        y: start_point_widget.position.y + start_point_widget.size.y / 2.0,
+                    }
+                } else {
+                    start_point_widget
                     .runnable.outputs.get(&link.start.entry_name)
                     .expect(format!("Non-connected link is found: output '{}' is not found in '{}'", link.start.entry_name, link.start.function_name).as_str())
-                    .pos;
-                let end_point = self.rects.iter()
+                    .pos
+                };
+
+                let end_point_widget = self.rects.iter()
                     .find(|p| p.runnable.name == link.end.function_name)
-                    .expect(format!("Non-connected link is found: function '{}' is not found", link.end.function_name).as_str())
+                    .expect(format!("Non-connected link is found: function '{}' is not found", link.end.function_name).as_str());                    
+                
+                let end_point = if end_point_widget.is_collapsed {
+                    Pos2 {
+                        x: end_point_widget.position.x,
+                        y: end_point_widget.position.y + end_point_widget.size.y / 2.0,
+                    }
+                } else {
+                    end_point_widget
                     .runnable.inputs.get(&link.end.entry_name)
                     .expect(format!("Non-connected link is found: input '{}' is not found in '{}'", link.end.entry_name, link.end.function_name).as_str())
-                    .pos;
+                    .pos
+                };                    
 
                 let second_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y};
                 let third_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: end_point.y };
