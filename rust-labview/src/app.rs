@@ -117,7 +117,15 @@ impl eframe::App for TemplateApp {
 
             if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_link_starting.is_some() }) {
                 if let Some(link_end) = fw.iter().find(|widget| { widget.config.has_link_ending.is_some() }) {
-                    self.links.push(Link { start: link_start_widget.config.has_link_starting.clone().unwrap(), end: link_end.config.has_link_ending.clone().unwrap() })
+                    self.links.push(Link { start: link_start_widget.config.has_link_starting.clone().unwrap(), end: link_end.config.has_link_ending.clone().unwrap() });
+
+                    if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_link_starting.is_some() }) {
+                        link_start_widget.config.has_link_starting.take();
+                    }
+        
+                    if let Some(link_end) = fw.iter_mut().find(|widget| { widget.config.has_link_ending.is_some() }) {
+                        link_end.config.has_link_ending.take();
+                    }
                 } else if let Some(link_end) = ui.ctx().pointer_latest_pos() {
                     let link_start = link_start_widget.config.has_link_starting.clone().unwrap();
                     let link_start_pos = link_start_widget.config.runnable.outputs.get(&link_start.entry_name).unwrap().pos;
