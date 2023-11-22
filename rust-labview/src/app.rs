@@ -14,7 +14,7 @@ pub struct TemplateApp {
     rects: Vec<FunctionConfig>,
     #[serde(skip)] 
     links: Vec<Link>,
-    // curve_starting_pos: Option<Pos2>,
+    last_rect_id: usize,
 }
 
 impl Default for TemplateApp {
@@ -29,8 +29,8 @@ impl Default for TemplateApp {
                     start: LinkVertex { function_name: "Function #0".to_owned(), entry_name: "Output1".to_owned() },
                     end: LinkVertex { function_name: "Function #1".to_owned(), entry_name: "Input1".to_owned() }
                 }
-            ]
-            // curve_starting_pos: None,
+            ],
+            last_rect_id: 0,
         }
     }
 }
@@ -141,7 +141,11 @@ impl eframe::App for TemplateApp {
                 .rounding(5.0);
             let icon_response = ui.add(icon);
             if icon_response.clicked() {
-                self.rects.push(FunctionConfig::default_with_pos(Pos2 { x: 0.0, y: 0.0 }, format!("Function #{}", self.rects.len())));
+                self.rects.push(FunctionConfig::default_with_pos(
+                    Pos2 { x: 0.0, y: 0.0 }, 
+                    format!("Function #{}", self.last_rect_id)
+                ));
+                self.last_rect_id += 1;
             }
         });
 
