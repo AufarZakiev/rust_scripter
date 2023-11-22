@@ -36,14 +36,19 @@ impl Default for RunnableWithPositions {
     }
 }
 
+impl RunnableWithPositions {
+    pub fn get_entry(self: &Self, entry_name: &String) -> Option<&FunctionInputConfig> {
+        return self.inputs.get(entry_name).or_else(|| {self.outputs.get(entry_name)})
+    }
+}
+
 pub struct FunctionConfig {
     pub runnable: RunnableWithPositions,
     pub position: Pos2,
     pub size: Vec2,
     pub is_open: bool,
     pub is_collapsed: bool,
-    pub has_link_starting: Option<LinkVertex>,
-    pub has_link_ending: Option<LinkVertex>,
+    pub has_vertex: Option<LinkVertex>,
 }
 
 impl Default for FunctionConfig {
@@ -74,8 +79,7 @@ impl FunctionConfig {
             runnable,
             is_open,
             is_collapsed,
-            has_link_starting: None,
-            has_link_ending: None,
+            has_vertex: None,
         }
     }
 }
@@ -127,7 +131,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         ele.1.pos = circle_rect.center();
 
                         if label_response.clicked() {
-                            self.config.has_link_ending = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() })
+                            self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
                         }
 
                         if let Some(pointer_pos) = columns[0].ctx().pointer_interact_pos() {
@@ -160,7 +164,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         ele.1.pos = circle_rect.center();
 
                         if label_response.inner.clicked() {
-                            self.config.has_link_starting = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
+                            self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
                         }
 
                         if let Some(pointer_pos) = columns[1].ctx().pointer_interact_pos() {

@@ -115,34 +115,20 @@ impl eframe::App for TemplateApp {
                 }
             });
 
-            if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_link_starting.is_some() }) {
-                ui.input(|i| { if i.key_pressed(Key::Escape) {
-                    link_start_widget.config.has_link_starting.take();                    
-                }});
+            if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
+                ui.input(|i| { 
+                    if i.key_pressed(Key::Escape) {
+                        link_start_widget.config.has_vertex.take();                    
+                    }
+                });
             }
 
-            if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_link_starting.is_some() }) {
-                if let Some(link_end) = fw.iter().find(|widget| { widget.config.has_link_ending.is_some() }) {
-                    if link_start_widget.config.runnable.name == link_end.config.runnable.name {
-                        if let Some(link_end) = fw.iter_mut().find(|widget| { widget.config.has_link_ending.is_some() }) {
-                            link_end.config.has_link_ending.take();
-                        }
-                        return;
-                    }
+            if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
+                if let Some(link_end) = ui.ctx().pointer_latest_pos() {
+                    let link_start = link_start_widget.config.has_vertex.clone().unwrap();
+                    let link_start_pos = link_start_widget.config.runnable.get_entry(&link_start.entry_name)
+                        .expect(format!("Not found entry named {}", link_start.entry_name).as_str()).pos;
 
-                    self.links.push(Link { start: link_start_widget.config.has_link_starting.clone().unwrap(), end: link_end.config.has_link_ending.clone().unwrap() });
-
-                    if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_link_starting.is_some() }) {
-                        link_start_widget.config.has_link_starting.take();
-                    }
-        
-                    if let Some(link_end) = fw.iter_mut().find(|widget| { widget.config.has_link_ending.is_some() }) {
-                        link_end.config.has_link_ending.take();
-                    }
-                } else if let Some(link_end) = ui.ctx().pointer_latest_pos() {
-                    let link_start = link_start_widget.config.has_link_starting.clone().unwrap();
-                    let link_start_pos = link_start_widget.config.runnable.outputs.get(&link_start.entry_name).unwrap().pos;
-                    
                     let second_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_start_pos.y};
                     let third_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_end.y };
     
@@ -151,6 +137,22 @@ impl eframe::App for TemplateApp {
                     
                     ui.painter().add(curve);
                 }
+            }
+
+            if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
+                if let Some(link_end) = fw.iter().rev().find(|widget| { widget.config.has_vertex.is_some() }) {
+                    if link_start_widget.config.runnable.name != link_end.config.runnable.name {
+                        self.links.push(Link { start: link_start_widget.config.has_vertex.clone().unwrap(), end: link_end.config.has_vertex.clone().unwrap() });
+
+                        if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
+                            link_start_widget.config.has_vertex.take();
+                        }
+            
+                        if let Some(link_end) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
+                            link_end.config.has_vertex.take();
+                        }
+                    }
+                } 
             }
 
             for link in self.links.iter() {
@@ -164,7 +166,7 @@ impl eframe::App for TemplateApp {
                     }
                 } else {
                     start_point_widget
-                    .runnable.outputs.get(&link.start.entry_name)
+                    .runnable.get_entry(&link.start.entry_name)
                     .expect(format!("Non-connected link is found: output '{}' is not found in '{}'", link.start.entry_name, link.start.function_name).as_str())
                     .pos
                 };
@@ -180,7 +182,7 @@ impl eframe::App for TemplateApp {
                     }
                 } else {
                     end_point_widget
-                    .runnable.inputs.get(&link.end.entry_name)
+                    .runnable.get_entry(&link.end.entry_name)
                     .expect(format!("Non-connected link is found: input '{}' is not found in '{}'", link.end.entry_name, link.end.function_name).as_str())
                     .pos
                 };                    
