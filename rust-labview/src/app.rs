@@ -156,29 +156,9 @@ impl eframe::App for TemplateApp {
                 }
             });
 
-            if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
-                ui.input(|i| { 
-                    if i.key_pressed(Key::Escape) {
-                        link_start_widget.config.has_vertex.take();                    
-                    }
-                });
-            }
+            cancel_link_if_esc(&mut fw, ui);
 
-            if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
-                if let Some(link_end) = ui.ctx().pointer_latest_pos() {
-                    let link_start = link_start_widget.config.has_vertex.clone().unwrap();
-                    let link_start_pos = link_start_widget.config.runnable.get_entry(&link_start.entry_name)
-                        .expect(format!("Not found entry named {}", link_start.entry_name).as_str()).pos;
-
-                    let second_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_start_pos.y};
-                    let third_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_end.y };
-    
-                    let points: [Pos2; 4] = [link_start_pos, second_point, third_point, link_end];
-                    let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
-                    
-                    ui.painter().add(curve);
-                }
-            }
+            create_link_if_clicked(&fw, ui, stroke);
 
             if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
                 if let Some(link_end) = fw.iter().rev().find(|widget| { widget.config.has_vertex.is_some() }) {
@@ -198,6 +178,34 @@ impl eframe::App for TemplateApp {
 
             for link in self.links.iter() {
                 self.render_links(link, stroke, ui);
+            }
+        });
+    }
+}
+
+fn create_link_if_clicked(fw: &Vec<FunctionWidget<'_>>, ui: &mut egui::Ui, stroke: egui::Stroke) {
+    if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
+        if let Some(link_end) = ui.ctx().pointer_latest_pos() {
+            let link_start = link_start_widget.config.has_vertex.clone().unwrap();
+            let link_start_pos = link_start_widget.config.runnable.get_entry(&link_start.entry_name)
+                .expect(format!("Not found entry named {}", link_start.entry_name).as_str()).pos;
+
+            let second_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_start_pos.y};
+            let third_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_end.y };
+    
+            let points: [Pos2; 4] = [link_start_pos, second_point, third_point, link_end];
+            let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+        
+            ui.painter().add(curve);
+        }
+    }
+}
+
+fn cancel_link_if_esc(fw: &mut Vec<FunctionWidget<'_>>, ui: &mut egui::Ui) {
+    if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
+        ui.input(|i| { 
+            if i.key_pressed(Key::Escape) {
+                link_start_widget.config.has_vertex.take();                    
             }
         });
     }
