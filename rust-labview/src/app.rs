@@ -1,4 +1,4 @@
-use egui::{Pos2, Window, Sense, epaint::{Shadow, CubicBezierShape, self}, Style, Visuals, Color32, pos2};
+use egui::{Pos2, Window, Sense, epaint::{Shadow, CubicBezierShape, self}, Style, Visuals, Color32, pos2, Key};
 use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig, LinkVertex};
 
 struct Link {
@@ -115,8 +115,21 @@ impl eframe::App for TemplateApp {
                 }
             });
 
+            if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_link_starting.is_some() }) {
+                ui.input(|i| { if i.key_pressed(Key::Escape) {
+                    link_start_widget.config.has_link_starting.take();                    
+                }});
+            }
+
             if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_link_starting.is_some() }) {
                 if let Some(link_end) = fw.iter().find(|widget| { widget.config.has_link_ending.is_some() }) {
+                    if link_start_widget.config.runnable.name == link_end.config.runnable.name {
+                        if let Some(link_end) = fw.iter_mut().find(|widget| { widget.config.has_link_ending.is_some() }) {
+                            link_end.config.has_link_ending.take();
+                        }
+                        return;
+                    }
+
                     self.links.push(Link { start: link_start_widget.config.has_link_starting.clone().unwrap(), end: link_end.config.has_link_ending.clone().unwrap() });
 
                     if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_link_starting.is_some() }) {
