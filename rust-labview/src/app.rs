@@ -54,45 +54,53 @@ impl TemplateApp {
         Default::default()
     }
 
-    fn render_links(&self, link: &Link, stroke: egui::Stroke, ui: &mut egui::Ui) {
-        let start_point_widget = self.rects.iter()
-            .find(|p| p.runnable.name == link.start.function_name)
-            .expect(format!("Non-connected link is found: function '{}' is not found", link.start.function_name).as_str());
-        let start_point = if start_point_widget.is_collapsed {
-            Pos2 {
-                x: start_point_widget.position.x + start_point_widget.size.x,
-                y: start_point_widget.position.y + start_point_widget.size.y / 2.0,
-            }
-        } else {
-            start_point_widget
-            .runnable.get_entry(&link.start.entry_name)
-            .expect(format!("Non-connected link is found: output '{}' is not found in '{}'", link.start.entry_name, link.start.function_name).as_str())
-            .pos
-        };
+    fn render_links(&mut self, stroke: egui::Stroke, ui: &mut egui::Ui) {
+        self.links.retain(|link|{
+            self.rects.iter().find(|p| p.runnable.name == link.end.function_name).is_some() &&
+            self.rects.iter().find(|p| p.runnable.name == link.start.function_name).is_some()
+        });
 
-        let end_point_widget = self.rects.iter()
-            .find(|p| p.runnable.name == link.end.function_name)
-            .expect(format!("Non-connected link is found: function '{}' is not found", link.end.function_name).as_str());
-                
-        let end_point = if end_point_widget.is_collapsed {
-            Pos2 {
-                x: end_point_widget.position.x,
-                y: end_point_widget.position.y + end_point_widget.size.y / 2.0,
-            }
-        } else {
-            end_point_widget
-            .runnable.get_entry(&link.end.entry_name)
-            .expect(format!("Non-connected link is found: input '{}' is not found in '{}'", link.end.entry_name, link.end.function_name).as_str())
-            .pos
-        };
+        for current_link in self.links.iter() {
+            let start_point_widget = self.rects.iter()
+                .find(|p| p.runnable.name == current_link.start.function_name)
+                .expect(format!("Non-connected link is found: function '{}' is not found", current_link.end.function_name).as_str());
 
-        let second_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y};
-        let third_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: end_point.y };
+            let start_point = if start_point_widget.is_collapsed {
+                Pos2 {
+                    x: start_point_widget.position.x + start_point_widget.size.x,
+                    y: start_point_widget.position.y + start_point_widget.size.y / 2.0,
+                }
+            } else {
+                start_point_widget
+                .runnable.get_entry(&current_link.start.entry_name)
+                .expect(format!("Non-connected link is found: output '{}' is not found in '{}'", current_link.start.entry_name, current_link.start.function_name).as_str())
+                .pos
+            };
 
-        let points: [Pos2; 4] = [start_point, second_point, third_point, end_point];
-        let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
-                
-        ui.painter().add(curve);
+            let end_point_widget = self.rects.iter()
+                .find(|p| p.runnable.name == current_link.end.function_name)
+                .expect(format!("Non-connected link is found: function '{}' is not found", current_link.end.function_name).as_str());
+                          
+            let end_point = if end_point_widget.is_collapsed {
+                Pos2 {
+                    x: end_point_widget.position.x,
+                    y: end_point_widget.position.y + end_point_widget.size.y / 2.0,
+                }
+            } else {
+                end_point_widget
+                .runnable.get_entry(&current_link.end.entry_name)
+                .expect(format!("Non-connected link is found: input '{}' is not found in '{}'", current_link.end.entry_name, current_link.end.function_name).as_str())
+                .pos
+            };
+
+            let second_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y};
+            let third_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: end_point.y };
+
+            let points: [Pos2; 4] = [start_point, second_point, third_point, end_point];
+            let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+                    
+            ui.painter().add(curve);
+        }
     }
 }
 
@@ -176,9 +184,7 @@ impl eframe::App for TemplateApp {
                 } 
             }
 
-            for link in self.links.iter() {
-                self.render_links(link, stroke, ui);
-            }
+            self.render_links(stroke, ui);
         });
     }
 }
