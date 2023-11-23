@@ -1,9 +1,10 @@
-use egui::{Pos2, Window, Sense, epaint::{Shadow, CubicBezierShape, self}, Style, Visuals, Color32, pos2, Key};
+use egui::{Pos2, Window, Sense, epaint::{Shadow, CubicBezierShape, self}, Style, Visuals, Color32, pos2, Key, Rect, Vec2, Align, Align2, TextStyle, Button, Label};
 use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig, LinkVertex};
 
 struct Link {
     start: LinkVertex,
     end: LinkVertex,
+    should_be_deleted: bool,
 }
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -27,7 +28,8 @@ impl Default for TemplateApp {
             links: vec![
                 Link { 
                     start: LinkVertex { function_name: "Function #0".to_owned(), entry_name: "Output1".to_owned() },
-                    end: LinkVertex { function_name: "Function #1".to_owned(), entry_name: "Input1".to_owned() }
+                    end: LinkVertex { function_name: "Function #1".to_owned(), entry_name: "Input1".to_owned() },
+                    should_be_deleted: false
                 }
             ],
             last_rect_id: 0,
@@ -57,10 +59,11 @@ impl TemplateApp {
     fn render_links(&mut self, stroke: egui::Stroke, ui: &mut egui::Ui) {
         self.links.retain(|link|{
             self.rects.iter().find(|p| p.runnable.name == link.end.function_name).is_some() &&
-            self.rects.iter().find(|p| p.runnable.name == link.start.function_name).is_some()
+            self.rects.iter().find(|p| p.runnable.name == link.start.function_name).is_some() &&
+            !link.should_be_deleted
         });
 
-        for current_link in self.links.iter() {
+        for current_link in self.links.iter_mut() {
             let start_point_widget = self.rects.iter()
                 .find(|p| p.runnable.name == current_link.start.function_name)
                 .expect(format!("Non-connected link is found: function '{}' is not found", current_link.end.function_name).as_str());
@@ -98,6 +101,26 @@ impl TemplateApp {
 
             let points: [Pos2; 4] = [start_point, second_point, third_point, end_point];
             let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+
+            if let Some(cursor_pos) = ui.ctx().pointer_latest_pos() {
+                let delete_icon_point = Pos2 {x: (start_point.x + end_point.x)/2.0, y: (start_point.y + end_point.y) / 2.0};
+                let delete_icon_rect = Rect {
+                    min: delete_icon_point - Vec2{x: 30.0, y: 30.0},
+                    max: delete_icon_point + Vec2{x: 30.0, y: 30.0},
+                };
+
+                if delete_icon_rect.contains(cursor_pos) {
+                    let delete_icon_response = ui.allocate_ui_at_rect(delete_icon_rect, |ui| {
+                        let delete_icon = Label::new("❌").sense(Sense::click());
+                        ui.with_layout(egui::Layout::centered_and_justified(egui::Direction::TopDown), |ui| {
+                            ui.add(delete_icon)
+                        })
+                    });
+                    if delete_icon_response.inner.inner.clicked() {
+                        current_link.should_be_deleted = true;   
+                    }  
+                }        
+            }
                     
             ui.painter().add(curve);
         }
@@ -175,7 +198,7 @@ impl eframe::App for TemplateApp {
             if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
                 if let Some(link_end) = fw.iter().rev().find(|widget| { widget.config.has_vertex.is_some() }) {
                     if link_start_widget.config.runnable.name != link_end.config.runnable.name {
-                        self.links.push(Link { start: link_start_widget.config.has_vertex.clone().unwrap(), end: link_end.config.has_vertex.clone().unwrap() });
+                        self.links.push(Link { start: link_start_widget.config.has_vertex.clone().unwrap(), end: link_end.config.has_vertex.clone().unwrap(), should_be_deleted: false });
 
                         if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
                             link_start_widget.config.has_vertex.take();
