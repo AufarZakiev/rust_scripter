@@ -139,6 +139,15 @@ impl Widget for &mut FunctionWidget<'_> {
                         if label_response.clicked() {
                             self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
                         }
+
+                        if label_response.hovered() {                            
+                            circle_painter.circle(
+                                circle_rect.center(),
+                                2.5,
+                                Color32::from_rgb(255, 255, 255), 
+                                stroke
+                            )
+                        }
                     };
                     for ele in self.config.runnable.outputs.iter_mut() {
                         let label_response = columns[1].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
@@ -160,6 +169,15 @@ impl Widget for &mut FunctionWidget<'_> {
 
                         if label_response.inner.clicked() {
                             self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
+                        }
+
+                        if label_response.inner.hovered() {                            
+                            circle_painter.circle(
+                                circle_rect.center(),
+                                2.5,
+                                Color32::from_rgb(255, 255, 255), 
+                                stroke
+                            )
                         }
                     }
                 })
