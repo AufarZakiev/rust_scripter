@@ -139,17 +139,6 @@ impl Widget for &mut FunctionWidget<'_> {
                         if label_response.clicked() {
                             self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
                         }
-
-                        if let Some(pointer_pos) = columns[0].ctx().pointer_interact_pos() {
-                            if circle_rect.contains(pointer_pos) {
-                                let tooltip_pos = circle_rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
-                    
-                                columns[0].painter().error(
-                                    tooltip_pos,
-                                    "Click to start drawing a connection"
-                                );
-                            }
-                        }
                     };
                     for ele in self.config.runnable.outputs.iter_mut() {
                         let label_response = columns[1].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
@@ -171,17 +160,6 @@ impl Widget for &mut FunctionWidget<'_> {
 
                         if label_response.inner.clicked() {
                             self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
-                        }
-
-                        if let Some(pointer_pos) = columns[1].ctx().pointer_interact_pos() {
-                            if circle_rect.contains(pointer_pos) {
-                                let tooltip_pos = circle_rect.right_bottom() + Vec2{x: 4.0, y: 4.0};
-                    
-                                columns[1].painter().error(
-                                    tooltip_pos,
-                                    "Click to start drawing a connection"
-                                );
-                            }
                         }
                     }
                 })
