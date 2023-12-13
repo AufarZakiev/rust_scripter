@@ -1,6 +1,8 @@
 use egui::{Pos2, Window, Sense, epaint::{Shadow, CubicBezierShape, self}, Style, Visuals, Color32, pos2, Key, Rect, Vec2, Align, Align2, TextStyle, Button, Label};
 use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig, LinkVertex};
+use serde::{Serialize, Deserialize};
 
+#[derive(Deserialize, Serialize)]
 struct Link {
     start: LinkVertex,
     end: LinkVertex,
@@ -8,12 +10,10 @@ struct Link {
 }
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
-    #[serde(skip)]
     rects: Vec<FunctionConfig>,
-    #[serde(skip)] 
     links: Vec<Link>,
     last_rect_id: usize,
 }
@@ -50,7 +50,10 @@ impl TemplateApp {
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+            if let Some(mut storage) = eframe::get_value::<TemplateApp>(storage, eframe::APP_KEY) {
+                storage.last_rect_id = storage.rects.len() - 1;
+                return storage;
+            }
         }
 
         Default::default()

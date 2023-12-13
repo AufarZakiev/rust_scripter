@@ -1,6 +1,7 @@
 use ordered_hash_map::OrderedHashMap;
+use serde::{Serialize, Deserialize};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum ParamTypes {
     Number,
     String,

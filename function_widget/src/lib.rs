@@ -3,21 +3,26 @@ use ordered_hash_map::OrderedHashMap;
 
 pub use runnable::{Runnable, ParamTypes};
 use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window, Order, Area, LayerId, Id, text::LayoutJob, TextFormat, Align, RichText, Label};
+use serde::{Serialize, Deserialize};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct LinkVertex {
     pub function_name: String,
     pub entry_name: String,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct FunctionInputConfig {
     pub input_type: ParamTypes,
     pub pos: Pos2,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct RunnableWithPositions {
     pub name: String,
+    #[serde(with = "vectorize")]
     pub inputs: OrderedHashMap<String, FunctionInputConfig>,
+    #[serde(with = "vectorize")]
     pub outputs: OrderedHashMap<String, FunctionInputConfig>,
 }
 
@@ -42,6 +47,7 @@ impl RunnableWithPositions {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct FunctionConfig {
     pub runnable: RunnableWithPositions,
     pub position: Pos2,
