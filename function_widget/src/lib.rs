@@ -1,8 +1,7 @@
-use std::cmp::max;
 use ordered_hash_map::OrderedHashMap;
 
 pub use runnable::{Runnable, ParamTypes};
-use egui::{widgets::Widget, Sense, Rounding, Color32, Rect, Pos2, Vec2, Response, Window, Order, Area, LayerId, Id, text::LayoutJob, TextFormat, Align, RichText, Label};
+use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window};
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -88,10 +87,6 @@ impl FunctionConfig {
             has_vertex: None,
         }
     }
-}
-
-pub struct FunctionInput {
-    config: FunctionInputConfig
 }
 
 #[must_use = "You should put this widget in an ui with `ui.add(widget);`"]

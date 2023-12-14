@@ -1,5 +1,5 @@
-use egui::{Pos2, Window, Sense, epaint::{Shadow, CubicBezierShape, self}, Style, Visuals, Color32, pos2, Key, Rect, Vec2, Align, Align2, TextStyle, Button, Label};
-use function_widget::{FunctionWidget, Runnable, ParamTypes, FunctionConfig, LinkVertex};
+use egui::{Pos2, Sense, epaint::CubicBezierShape, Key, Rect, Vec2, Label};
+use function_widget::{FunctionWidget,FunctionConfig, LinkVertex};
 use serde::{Serialize, Deserialize};
 
 #[derive(Deserialize, Serialize)]
