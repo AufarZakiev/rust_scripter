@@ -32,7 +32,7 @@ impl Default for TemplateApp {
                     should_be_deleted: false
                 }
             ],
-            last_rect_id: 0,
+            last_rect_id: 3,
         }
     }
 }
@@ -51,8 +51,10 @@ impl TemplateApp {
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
             if let Some(mut storage) = eframe::get_value::<TemplateApp>(storage, eframe::APP_KEY) {
-                storage.last_rect_id = storage.rects.len() - 1;
-                return storage;
+                if let Some(last_rect) = storage.rects.last() {
+                    storage.last_rect_id = last_rect.runnable.name.chars().last().unwrap().to_digit(10).unwrap() as usize + 1;
+                    return storage;
+                }                
             }
         }
 
