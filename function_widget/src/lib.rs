@@ -114,7 +114,7 @@ impl Widget for &mut FunctionWidget<'_> {
                 
                 let stroke = ui.visuals().widgets.hovered.bg_stroke;
                 
-                ui.columns(2, |columns| {
+                ui.columns(3, |columns| {
                     for ele in self.config.runnable.inputs.iter_mut() {
                         let label = Label::new(ele.0.clone()).sense(Sense::click());
                         let label_response = columns[0].add(label);
@@ -144,8 +144,15 @@ impl Widget for &mut FunctionWidget<'_> {
                             )
                         }
                     };
+                    let run_button = egui::Button::new("▶").rounding(5.0);
+                    columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| { 
+                        let run_button_response = ui.add(run_button);
+                        if run_button_response.clicked() {
+                            
+                        }
+                    });
                     for ele in self.config.runnable.outputs.iter_mut() {
-                        let label_response = columns[1].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
+                        let label_response = columns[2].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
                             let label = Label::new(ele.0.clone()).sense(Sense::click());
                             ui.add(label)
                         });
