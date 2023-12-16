@@ -147,8 +147,17 @@ impl Widget for &mut FunctionWidget<'_> {
                     let run_button = egui::Button::new("▶").rounding(5.0);
                     columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| { 
                         let run_button_response = ui.add(run_button);
-                        if run_button_response.clicked() {
-                            
+                        if run_button_response.hovered() {
+
+                            let engine = {
+                                let mut engine = rhai::Engine::new();
+                                engine
+                                    .disable_symbol("eval");
+                                engine
+                            };
+
+                            let result = engine.eval::<String>(r#"print("Hello world!"); "42""#).unwrap();
+                            ui.label(result);
                         }
                     });
                     for ele in self.config.runnable.outputs.iter_mut() {
