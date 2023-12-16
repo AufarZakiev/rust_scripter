@@ -92,12 +92,14 @@ impl FunctionConfig {
 #[must_use = "You should put this widget in an ui with `ui.add(widget);`"]
 pub struct FunctionWidget<'a> {
     pub config: &'a mut FunctionConfig,
+    pub engine: rhai::Engine,
 }
 
 impl<'a> FunctionWidget<'a> {
     pub fn new(config: &'a mut FunctionConfig) -> Self {
         Self { 
             config,
+            engine: rhai::Engine::new(),
         }
     }
 }
@@ -148,15 +150,7 @@ impl Widget for &mut FunctionWidget<'_> {
                     columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| { 
                         let run_button_response = ui.add(run_button);
                         if run_button_response.hovered() {
-
-                            let engine = {
-                                let mut engine = rhai::Engine::new();
-                                engine
-                                    .disable_symbol("eval");
-                                engine
-                            };
-
-                            let result = engine.eval::<String>(r#"print("Hello world!"); "42""#).unwrap();
+                            let result = self.engine.eval::<String>(r#"print("Hello world!"); "42""#).unwrap();
                             ui.label(result);
                         }
                     });
