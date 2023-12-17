@@ -1,5 +1,6 @@
 use ordered_hash_map::OrderedHashMap;
 
+use rhai::{Map, Variant};
 pub use runnable::{Runnable, ParamTypes};
 use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window};
 use serde::{Serialize, Deserialize};
@@ -151,8 +152,11 @@ impl Widget for &mut FunctionWidget<'_> {
                     columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| { 
                         let run_button_response = ui.add(run_button);
                         if run_button_response.hovered() {
-                            let result = self.engine.eval::<String>(&self.config.runnable.code).unwrap();
-                            ui.label(result);
+                            if let Ok(result) = self.engine.eval::<Map>(&self.config.runnable.code) {
+                                if let Some(val) = result.get("test") {
+                                    ui.label(val.clone().into_string().unwrap());
+                                }
+                            }
                         }
                     });
                     for ele in self.config.runnable.outputs.iter_mut() {
