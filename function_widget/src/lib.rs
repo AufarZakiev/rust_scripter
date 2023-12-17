@@ -19,6 +19,7 @@ pub struct FunctionInputConfig {
 #[derive(Serialize, Deserialize)]
 pub struct RunnableWithPositions {
     pub name: String,
+    pub code: String,
     #[serde(with = "vectorize")]
     pub inputs: OrderedHashMap<String, FunctionInputConfig>,
     #[serde(with = "vectorize")]
@@ -36,7 +37,7 @@ impl Default for RunnableWithPositions {
         for ele in default_runnable.outputs {
             outputs.insert(ele.0, FunctionInputConfig { input_type: ele.1, pos: Pos2 { x: 0.0, y: 0.0 } });
         }
-        Self { name: default_runnable.name, inputs, outputs }
+        Self { name: default_runnable.name, inputs, outputs, code: r#"print("Hello world!"); "42""#.to_string() }
     }
 }
 
@@ -150,7 +151,7 @@ impl Widget for &mut FunctionWidget<'_> {
                     columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| { 
                         let run_button_response = ui.add(run_button);
                         if run_button_response.hovered() {
-                            let result = self.engine.eval::<String>(r#"print("Hello world!"); "42""#).unwrap();
+                            let result = self.engine.eval::<String>(&self.config.runnable.code).unwrap();
                             ui.label(result);
                         }
                     });
@@ -185,7 +186,30 @@ impl Widget for &mut FunctionWidget<'_> {
                             )
                         }
                     }
-                })
+                });
+                ui.collapsing("Code", |ui| {
+                    let language = "rs";
+                    let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
+
+                    let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
+                        let mut layout_job =
+                            egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, language);
+                        layout_job.wrap.max_width = wrap_width;
+                        ui.fonts(|f| f.layout_job(layout_job))
+                    };
+            
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.config.runnable.code)
+                                .font(egui::TextStyle::Monospace) // for cursor height
+                                .code_editor()
+                                .desired_rows(10)
+                                .lock_focus(true)
+                                .desired_width(f32::INFINITY)
+                                .layouter(&mut layouter),
+                        );
+                    });
+                });
         }).unwrap();
 
         self.config.is_collapsed = window_response.inner.is_none();
