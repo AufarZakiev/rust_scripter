@@ -192,6 +192,7 @@ impl Widget for &mut FunctionWidget<'_> {
                     let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
 
                     let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
+                        // REIMPLEMENT FOR FILE SUPPORT & MAKE A PR FOR GUI EXTRAS
                         let mut layout_job =
                             egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, language);
                         layout_job.wrap.max_width = wrap_width;
