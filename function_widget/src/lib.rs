@@ -142,6 +142,7 @@ impl Widget for &mut FunctionWidget<'_> {
                     .layer_painter(LayerId::new(Order::Foreground, Id::new(self.config.runnable.name.clone())));
                 
                 let stroke = ui.visuals().widgets.hovered.bg_stroke;
+                let pointer = ui.ctx().pointer_latest_pos();
                 
                 ui.columns(3, |columns| {
                     for ele in self.config.runnable.inputs.iter_mut() {
@@ -150,7 +151,7 @@ impl Widget for &mut FunctionWidget<'_> {
 
                         let circle_rect = Rect::from_center_size(
                             label_response.rect.left_center() + Vec2 { x: -7.0, y: 0.0 },
-                            Vec2 { x: 5.0, y: 5.0 }
+                            Vec2 { x: 10.0, y: 10.0 }
                         );
                         circle_painter.circle(
                             circle_rect.center(),
@@ -164,7 +165,8 @@ impl Widget for &mut FunctionWidget<'_> {
                             self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
                         }
 
-                        if label_response.hovered() {                            
+                        let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
+                        if label_response.hovered() || is_circle_hovered {                            
                             circle_painter.circle(
                                 circle_rect.center(),
                                 2.5,
@@ -192,7 +194,7 @@ impl Widget for &mut FunctionWidget<'_> {
 
                         let circle_rect = Rect::from_center_size(
                             label_response.response.rect.right_center() + Vec2 { x: 7.0, y: 0.0 },
-                            Vec2 { x: 5.0, y: 5.0 }
+                            Vec2 { x: 10.0, y: 10.0 }
                         );
                         circle_painter.circle(
                             circle_rect.center(),
@@ -206,7 +208,8 @@ impl Widget for &mut FunctionWidget<'_> {
                             self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
                         }
 
-                        if label_response.inner.hovered() {                            
+                        let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
+                        if label_response.inner.hovered() || is_circle_hovered {  
                             circle_painter.circle(
                                 circle_rect.center(),
                                 2.5,
