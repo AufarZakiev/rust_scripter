@@ -1,6 +1,6 @@
 use ordered_hash_map::OrderedHashMap;
 
-use rhai::{Map, Variant};
+use rhai::Map;
 pub use runnable::{Runnable, ParamTypes};
 use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window};
 use serde::{Serialize, Deserialize};
@@ -113,6 +113,31 @@ impl Widget for &mut FunctionWidget<'_> {
             .open(&mut self.config.is_open)
             .collapsible(true)
             .show(ui.ctx(), |ui| {                
+                ui.collapsing("Code", |ui| {
+                    let language = "rs";
+                    let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
+
+                    let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
+                        // REIMPLEMENT FOR FILE SUPPORT & MAKE A PR FOR GUI EXTRAS
+                        let mut layout_job =
+                            egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, language);
+                        layout_job.wrap.max_width = wrap_width;
+                        ui.fonts(|f| f.layout_job(layout_job))
+                    };
+            
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.config.runnable.code)
+                                .font(egui::TextStyle::Monospace) // for cursor height
+                                .code_editor()
+                                .desired_rows(10)
+                                .lock_focus(true)
+                                .desired_width(f32::INFINITY)
+                                .layouter(&mut layouter),
+                        );
+                    });
+                });
+                
                 let circle_painter = ui.ctx()
                     .layer_painter(LayerId::new(Order::Foreground, Id::new(self.config.runnable.name.clone())));
                 
@@ -190,30 +215,6 @@ impl Widget for &mut FunctionWidget<'_> {
                             )
                         }
                     }
-                });
-                ui.collapsing("Code", |ui| {
-                    let language = "rs";
-                    let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
-
-                    let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
-                        // REIMPLEMENT FOR FILE SUPPORT & MAKE A PR FOR GUI EXTRAS
-                        let mut layout_job =
-                            egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, language);
-                        layout_job.wrap.max_width = wrap_width;
-                        ui.fonts(|f| f.layout_job(layout_job))
-                    };
-            
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        ui.add(
-                            egui::TextEdit::multiline(&mut self.config.runnable.code)
-                                .font(egui::TextStyle::Monospace) // for cursor height
-                                .code_editor()
-                                .desired_rows(10)
-                                .lock_focus(true)
-                                .desired_width(f32::INFINITY)
-                                .layouter(&mut layouter),
-                        );
-                    });
                 });
         }).unwrap();
 
