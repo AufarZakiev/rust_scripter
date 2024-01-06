@@ -1,6 +1,7 @@
 use egui::{Pos2, Sense, epaint::CubicBezierShape, Key, Rect, Vec2, Label};
-use function_widget::{FunctionWidget,FunctionConfig, LinkVertex};
 use serde::{Serialize, Deserialize};
+
+use crate::function_widget::function_widget::{FunctionConfig, FunctionWidget, LinkVertex};
 
 #[derive(Deserialize, Serialize)]
 struct Link {

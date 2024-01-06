@@ -1,8 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    'rust-labview',
-    'function_widget',
+    'rust_scripter',
     'runnable'
 ]
 

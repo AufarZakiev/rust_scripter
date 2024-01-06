@@ -1082,19 +1082,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "function_widget"
-version = "0.1.0"
-dependencies = [
- "egui",
- "egui_extras",
- "ordered_hash_map",
- "rhai",
- "runnable",
- "serde",
- "vectorize",
-]
-
-[[package]]
 name = "futures-core"
 version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2087,17 +2074,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust_labview"
+name = "rust_scripter"
 version = "0.1.0"
 dependencies = [
  "eframe",
  "egui",
  "egui_extras",
  "env_logger",
- "function_widget",
  "image",
  "log",
+ "ordered_hash_map",
+ "rhai",
+ "runnable",
  "serde",
+ "vectorize",
  "wasm-bindgen-futures",
 ]
 
