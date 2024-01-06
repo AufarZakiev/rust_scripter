@@ -1,4 +1,4 @@
-# Rust LabView
+# Rust Scripter
 
 Pet-project to reproduce LabView-like env in the web using Rust.
 
