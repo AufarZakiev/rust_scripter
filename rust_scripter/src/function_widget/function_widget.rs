@@ -40,7 +40,7 @@ impl Default for RunnableWithPositions {
         Self { 
             name: default_runnable.name, inputs, outputs, 
             code: 
-r#"val = #{test: "test_val"};
+r#"let val = #{test: "test_val"};
 val"#
             .to_string() 
         }
