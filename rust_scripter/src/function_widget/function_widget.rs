@@ -37,7 +37,13 @@ impl Default for RunnableWithPositions {
         for ele in default_runnable.outputs {
             outputs.insert(ele.0, FunctionInputConfig { input_type: ele.1, pos: Pos2 { x: 0.0, y: 0.0 } });
         }
-        Self { name: default_runnable.name, inputs, outputs, code: r#"print("Hello world!"); "42""#.to_string() }
+        Self { 
+            name: default_runnable.name, inputs, outputs, 
+            code: 
+r#"val = #{test: "test_val"};
+val"#
+            .to_string() 
+        }
     }
 }
 
@@ -84,7 +90,7 @@ impl FunctionConfig {
         Self { 
             position: initial_pos, 
             interactive_size: Vec2 {x: 160.0, y: runnable.inputs.len() as f32 * 10.0 + 10.0},
-            code_size: Vec2 {x: 200.0, y: runnable.inputs.len() as f32 * 10.0 + 10.0},
+            code_size: Vec2 {x: 400.0, y: runnable.inputs.len() as f32 * 10.0 + 10.0},
             runnable,
             is_open,
             is_collapsed,
@@ -118,19 +124,15 @@ impl Widget for &mut FunctionWidget<'_> {
         if self.config.mode == "Interactive" {
             window = window.fixed_size(self.config.interactive_size);
         } else {
-            window = window.min_size(self.config.code_size);
+            window = window.fixed_size(self.config.code_size);
         }
+
+        let pointer = ui.ctx().pointer_latest_pos();
 
         let window_response = window.show(ui.ctx(), |ui| {
             ui.horizontal(|ui| {
                 ui.selectable_value(&mut self.config.mode, "Interactive".to_owned(), "Interactive");
                 ui.selectable_value(&mut self.config.mode, "Code".to_owned(), "Code");
-            });
-
-            ui.input_mut(|i| { 
-                if i.consume_shortcut(&KeyboardShortcut::new(Modifiers::CTRL, Key::Q)) {
-                    self.config.mode = if self.config.mode == "Code" { "Interactive".to_owned() } else { "Code".to_owned() };
-                }
             });
 
             if self.config.mode == "Code" {
@@ -144,24 +146,19 @@ impl Widget for &mut FunctionWidget<'_> {
                     layout_job.wrap.max_width = wrap_width;
                     ui.fonts(|f| f.layout_job(layout_job))
                 };
-        
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    ui.add(
-                        egui::TextEdit::multiline(&mut self.config.runnable.code)
-                            .font(egui::TextStyle::Monospace) // for cursor height
-                            .code_editor()
-                            .desired_rows(10)
-                            .lock_focus(true)
-                            .desired_width(f32::INFINITY)
-                            .layouter(&mut layouter),
-                    );
-                });
+    
+                ui.add(egui::TextEdit::multiline(&mut self.config.runnable.code)
+                        .font(egui::TextStyle::Monospace) // for cursor height
+                        .code_editor()
+                        .desired_rows(10)
+                        .lock_focus(true)
+                        .desired_width(f32::INFINITY)
+                        .layouter(&mut layouter));
             } else {
                 let circle_painter = ui.ctx()
                     .layer_painter(LayerId::new(Order::Foreground, Id::new(self.config.runnable.name.clone())));
                 
                 let stroke = ui.visuals().widgets.hovered.bg_stroke;
-                let pointer = ui.ctx().pointer_latest_pos();
                 
                 ui.columns(3, |columns| {
                     for ele in self.config.runnable.inputs.iter_mut() {
@@ -240,6 +237,15 @@ impl Widget for &mut FunctionWidget<'_> {
                 });
             }
         }).unwrap();
+
+        ui.input_mut(|i| { 
+            if pointer.is_some() && 
+                window_response.response.rect.contains(pointer.unwrap()) && 
+                i.consume_shortcut(&KeyboardShortcut::new(Modifiers::CTRL, Key::Q)) 
+            {
+                self.config.mode = if self.config.mode == "Code" { "Interactive".to_owned() } else { "Code".to_owned() };
+            }
+        });
 
         self.config.is_collapsed = window_response.inner.is_none();
         self.config.position = window_response.response.rect.left_top();
