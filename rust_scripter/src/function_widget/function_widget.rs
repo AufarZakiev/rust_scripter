@@ -51,10 +51,12 @@ impl RunnableWithPositions {
 pub struct FunctionConfig {
     pub runnable: RunnableWithPositions,
     pub position: Pos2,
-    pub size: Vec2,
+    pub interactive_size: Vec2,
+    pub code_size: Vec2,
     pub is_open: bool,
     pub is_collapsed: bool,
     pub has_vertex: Option<LinkVertex>,
+    pub mode: String,
 }
 
 impl Default for FunctionConfig {
@@ -81,11 +83,13 @@ impl FunctionConfig {
     ) -> Self {
         Self { 
             position: initial_pos, 
-            size: Vec2::default(),
+            interactive_size: Vec2 {x: 160.0, y: runnable.inputs.len() as f32 * 10.0 + 10.0},
+            code_size: Vec2 {x: 200.0, y: runnable.inputs.len() as f32 * 10.0 + 10.0},
             runnable,
             is_open,
             is_collapsed,
             has_vertex: None,
+            mode: "Interactive".to_owned(),
         }
     }
 }
@@ -107,36 +111,45 @@ impl<'a> FunctionWidget<'a> {
 
 impl Widget for &mut FunctionWidget<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        let window_response = Window::new(&self.config.runnable.name)
-            .fixed_size(Vec2 {x: 160.0, y: self.config.runnable.inputs.len() as f32 * 10.0 + 10.0})
+        let mut window = Window::new(&self.config.runnable.name)
             .open(&mut self.config.is_open)
-            .collapsible(true)
-            .show(ui.ctx(), |ui| {                
-                ui.collapsing("Code", |ui| {
-                    let language = "rs";
-                    let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
+            .collapsible(true);
 
-                    let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
-                        // REIMPLEMENT FOR FILE SUPPORT & MAKE A PR FOR GUI EXTRAS
-                        let mut layout_job =
-                            egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, language);
-                        layout_job.wrap.max_width = wrap_width;
-                        ui.fonts(|f| f.layout_job(layout_job))
-                    };
-            
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        ui.add(
-                            egui::TextEdit::multiline(&mut self.config.runnable.code)
-                                .font(egui::TextStyle::Monospace) // for cursor height
-                                .code_editor()
-                                .desired_rows(10)
-                                .lock_focus(true)
-                                .desired_width(f32::INFINITY)
-                                .layouter(&mut layouter),
-                        );
-                    });
+        if self.config.mode == "Interactive" {
+            window = window.fixed_size(self.config.interactive_size);
+        } else {
+            window = window.min_size(self.config.code_size);
+        }
+
+        let window_response = window.show(ui.ctx(), |ui| {
+            ui.horizontal(|ui| {
+                ui.selectable_value(&mut self.config.mode, "Interactive".to_owned(), "Interactive");
+                ui.selectable_value(&mut self.config.mode, "Code".to_owned(), "Code");
+            });         
+            if self.config.mode == "Code" {
+                let language = "rs";
+                let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
+
+                let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
+                    // REIMPLEMENT FOR FILE SUPPORT & MAKE A PR FOR GUI EXTRAS
+                    let mut layout_job =
+                        egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, language);
+                    layout_job.wrap.max_width = wrap_width;
+                    ui.fonts(|f| f.layout_job(layout_job))
+                };
+        
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    ui.add(
+                        egui::TextEdit::multiline(&mut self.config.runnable.code)
+                            .font(egui::TextStyle::Monospace) // for cursor height
+                            .code_editor()
+                            .desired_rows(10)
+                            .lock_focus(true)
+                            .desired_width(f32::INFINITY)
+                            .layouter(&mut layouter),
+                    );
                 });
-                
+            } else {
                 let circle_painter = ui.ctx()
                     .layer_painter(LayerId::new(Order::Foreground, Id::new(self.config.runnable.name.clone())));
                 
@@ -218,11 +231,11 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
                     }
                 });
+            }
         }).unwrap();
 
         self.config.is_collapsed = window_response.inner.is_none();
         self.config.position = window_response.response.rect.left_top();
-        self.config.size = window_response.response.rect.size();
 
         window_response.response
     }

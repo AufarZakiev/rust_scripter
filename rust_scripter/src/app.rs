@@ -74,10 +74,10 @@ impl TemplateApp {
                 .find(|p| p.runnable.name == current_link.start.function_name)
                 .expect(format!("Non-connected link is found: function '{}' is not found", current_link.end.function_name).as_str());
 
-            let start_point = if start_point_widget.is_collapsed {
+            let start_point = if start_point_widget.is_collapsed || start_point_widget.mode == "Code" {
                 Pos2 {
-                    x: start_point_widget.position.x + start_point_widget.size.x,
-                    y: start_point_widget.position.y + start_point_widget.size.y / 2.0,
+                    x: start_point_widget.position.x + start_point_widget.interactive_size.x,
+                    y: start_point_widget.position.y + 16.0,
                 }
             } else {
                 start_point_widget
@@ -90,10 +90,10 @@ impl TemplateApp {
                 .find(|p| p.runnable.name == current_link.end.function_name)
                 .expect(format!("Non-connected link is found: function '{}' is not found", current_link.end.function_name).as_str());
                           
-            let end_point = if end_point_widget.is_collapsed {
+            let end_point = if end_point_widget.is_collapsed || end_point_widget.mode == "Code" {
                 Pos2 {
                     x: end_point_widget.position.x,
-                    y: end_point_widget.position.y + end_point_widget.size.y / 2.0,
+                    y: end_point_widget.position.y + 16.0,
                 }
             } else {
                 end_point_widget
