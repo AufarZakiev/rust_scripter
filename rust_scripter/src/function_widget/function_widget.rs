@@ -1,7 +1,7 @@
 use ordered_hash_map::OrderedHashMap;
 use rhai::Map;
 pub use runnable::{Runnable, ParamTypes};
-use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window};
+use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers};
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -125,7 +125,14 @@ impl Widget for &mut FunctionWidget<'_> {
             ui.horizontal(|ui| {
                 ui.selectable_value(&mut self.config.mode, "Interactive".to_owned(), "Interactive");
                 ui.selectable_value(&mut self.config.mode, "Code".to_owned(), "Code");
-            });         
+            });
+
+            ui.input_mut(|i| { 
+                if i.consume_shortcut(&KeyboardShortcut::new(Modifiers::CTRL, Key::Q)) {
+                    self.config.mode = if self.config.mode == "Code" { "Interactive".to_owned() } else { "Code".to_owned() };
+                }
+            });
+
             if self.config.mode == "Code" {
                 let language = "rs";
                 let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
