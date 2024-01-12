@@ -2,6 +2,7 @@ use egui::{Pos2, Sense, epaint::CubicBezierShape, Key, Rect, Vec2, Label};
 use serde::{Serialize, Deserialize};
 
 use crate::function_widget::function_widget::{FunctionConfig, FunctionWidget, LinkVertex};
+use crate::function_widget::function_widget::WidgetMode;
 
 #[derive(Deserialize, Serialize)]
 struct Link {
@@ -74,14 +75,13 @@ impl TemplateApp {
                 .find(|p| p.runnable.name == current_link.start.function_name)
                 .expect(format!("Non-connected link is found: function '{}' is not found", current_link.end.function_name).as_str());
 
-            let start_point = if start_point_widget.is_collapsed || start_point_widget.mode == "Code" {
+            let start_point = if start_point_widget.is_collapsed || start_point_widget.mode == WidgetMode::Code {
                 Pos2 {
                     x: start_point_widget.position.x + start_point_widget.interactive_size.x,
                     y: start_point_widget.position.y + 16.0,
                 }
             } else {
-                start_point_widget
-                .runnable.get_entry(&current_link.start.entry_name)
+                start_point_widget.get_entry(&current_link.start.entry_name)
                 .expect(format!("Non-connected link is found: output '{}' is not found in '{}'", current_link.start.entry_name, current_link.start.function_name).as_str())
                 .pos
             };
@@ -90,14 +90,14 @@ impl TemplateApp {
                 .find(|p| p.runnable.name == current_link.end.function_name)
                 .expect(format!("Non-connected link is found: function '{}' is not found", current_link.end.function_name).as_str());
                           
-            let end_point = if end_point_widget.is_collapsed || end_point_widget.mode == "Code" {
+            let end_point = if end_point_widget.is_collapsed || end_point_widget.mode == WidgetMode::Code {
                 Pos2 {
                     x: end_point_widget.position.x,
                     y: end_point_widget.position.y + 16.0,
                 }
             } else {
                 end_point_widget
-                .runnable.get_entry(&current_link.end.entry_name)
+                .get_entry(&current_link.end.entry_name)
                 .expect(format!("Non-connected link is found: input '{}' is not found in '{}'", current_link.end.entry_name, current_link.end.function_name).as_str())
                 .pos
             };
@@ -226,7 +226,7 @@ fn create_link_if_clicked(fw: &Vec<FunctionWidget<'_>>, ui: &mut egui::Ui, strok
     if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
         if let Some(link_end) = ui.ctx().pointer_latest_pos() {
             let link_start = link_start_widget.config.has_vertex.clone().unwrap();
-            let link_start_pos = link_start_widget.config.runnable.get_entry(&link_start.entry_name)
+            let link_start_pos = link_start_widget.config.get_entry(&link_start.entry_name)
                 .expect(format!("Not found entry named {}", link_start.entry_name).as_str()).pos;
 
             let second_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_start_pos.y};

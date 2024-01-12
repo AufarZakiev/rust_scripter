@@ -2066,14 +2066,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "runnable"
-version = "0.1.0"
-dependencies = [
- "ordered_hash_map",
- "serde",
-]
-
-[[package]]
 name = "rust_scripter"
 version = "0.1.0"
 dependencies = [
@@ -2085,7 +2077,6 @@ dependencies = [
  "log",
  "ordered_hash_map",
  "rhai",
- "runnable",
  "serde",
  "vectorize",
  "wasm-bindgen-futures",

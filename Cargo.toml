@@ -1,8 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    'rust_scripter',
-    'runnable'
+    'rust_scripter'
 ]
 
 [profile.release]

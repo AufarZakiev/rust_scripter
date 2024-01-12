@@ -1,6 +1,5 @@
 use ordered_hash_map::OrderedHashMap;
 use rhai::Map;
-pub use runnable::{Runnable, ParamTypes};
 use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers};
 use serde::{Serialize, Deserialize};
 
@@ -12,12 +11,12 @@ pub struct LinkVertex {
 
 #[derive(Serialize, Deserialize)]
 pub struct FunctionInputConfig {
-    pub input_type: ParamTypes,
+    pub type_name: String,
     pub pos: Pos2,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct RunnableWithPositions {
+pub struct Runnable {
     pub name: String,
     pub code: String,
     #[serde(with = "vectorize")]
@@ -26,51 +25,54 @@ pub struct RunnableWithPositions {
     pub outputs: OrderedHashMap<String, FunctionInputConfig>,
 }
 
-impl Default for RunnableWithPositions {
+impl Default for Runnable {
     fn default() -> Self {
-        let default_runnable = Runnable::default();
         let mut inputs = OrderedHashMap::new();
-        for ele in default_runnable.inputs {
-            inputs.insert(ele.0, FunctionInputConfig { input_type: ele.1, pos: Pos2 { x: 0.0, y: 0.0 } });
-        }
-        let mut outputs = OrderedHashMap::new();
-        for ele in default_runnable.outputs {
-            outputs.insert(ele.0, FunctionInputConfig { input_type: ele.1, pos: Pos2 { x: 0.0, y: 0.0 } });
-        }
-        Self { 
-            name: default_runnable.name, inputs, outputs, 
-            code: 
-r#"let val = #{test: "test_val"};
-val"#
-            .to_string() 
-        }
-    }
-}
+        inputs.insert("Input1".into(), FunctionInputConfig { type_name: "String".to_string(), pos: Pos2::default() });
+        inputs.insert("Input2".into(), FunctionInputConfig { type_name: "String".to_string(), pos: Pos2::default() });
+        inputs.insert("Input3".into(), FunctionInputConfig { type_name: "String".to_string(), pos: Pos2::default() });
 
-impl RunnableWithPositions {
-    pub fn get_entry(self: &Self, entry_name: &String) -> Option<&FunctionInputConfig> {
-        return self.inputs.get(entry_name).or_else(|| {self.outputs.get(entry_name)})
+        let mut outputs = OrderedHashMap::new();
+        outputs.insert("Output1".into(), FunctionInputConfig { type_name: "String".to_string(), pos: Pos2::default() });
+        outputs.insert("Output2".into(), FunctionInputConfig { type_name: "String".to_string(), pos: Pos2::default() });
+        Self { 
+            name: "Function #0".to_owned(), 
+            code: 
+r#"let val = #{test: Input1};
+val"#
+            .to_string(),
+            inputs,
+            outputs,
+        }
     }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct FunctionConfig {
-    pub runnable: RunnableWithPositions,
+    pub runnable: Runnable,
     pub position: Pos2,
     pub interactive_size: Vec2,
     pub code_size: Vec2,
     pub is_open: bool,
     pub is_collapsed: bool,
     pub has_vertex: Option<LinkVertex>,
-    pub mode: String,
+    pub mode: WidgetMode,
+    #[serde(skip, default = "rhai::Engine::new")]
+    pub engine: rhai::Engine,
 }
 
 impl Default for FunctionConfig {
     fn default() -> FunctionConfig {
-        let default_runnable = RunnableWithPositions::default();
+        let default_runnable = Runnable::default();
 
         FunctionConfig::new(default_runnable, Pos2 {x: 120.0, y: 40.0}, true, true)
     }
+}
+
+#[derive(PartialEq, Deserialize, Serialize)]
+pub enum WidgetMode {
+    Code,
+    Signature
 }
 
 impl FunctionConfig {
@@ -81,21 +83,26 @@ impl FunctionConfig {
         def
     }
 
+    pub fn get_entry(self: &Self, entry_name: &String) -> Option<&FunctionInputConfig> {
+        return self.runnable.inputs.get(entry_name).or_else(|| {self.runnable.outputs.get(entry_name)});
+    }
+
     pub fn new(
-        runnable: RunnableWithPositions, 
+        runnable: Runnable,
         initial_pos: Pos2, 
         is_open: bool,
         is_collapsed: bool
     ) -> Self {
         Self { 
             position: initial_pos, 
-            interactive_size: Vec2 {x: 160.0, y: runnable.inputs.len() as f32 * 10.0 + 10.0},
-            code_size: Vec2 {x: 400.0, y: runnable.inputs.len() as f32 * 10.0 + 10.0},
+            interactive_size: Vec2 {x: 160.0, y: 100.0},
+            code_size: Vec2 {x: 400.0, y: 100.0},
             runnable,
             is_open,
             is_collapsed,
             has_vertex: None,
-            mode: "Interactive".to_owned(),
+            mode: WidgetMode::Signature,
+            engine: rhai::Engine::new(),
         }
     }
 }
@@ -103,14 +110,12 @@ impl FunctionConfig {
 #[must_use = "You should put this widget in an ui with `ui.add(widget);`"]
 pub struct FunctionWidget<'a> {
     pub config: &'a mut FunctionConfig,
-    pub engine: rhai::Engine,
 }
 
 impl<'a> FunctionWidget<'a> {
     pub fn new(config: &'a mut FunctionConfig) -> Self {
         Self { 
             config,
-            engine: rhai::Engine::new(),
         }
     }
 }
@@ -121,7 +126,7 @@ impl Widget for &mut FunctionWidget<'_> {
             .open(&mut self.config.is_open)
             .collapsible(true);
 
-        if self.config.mode == "Interactive" {
+        if self.config.mode == WidgetMode::Signature {
             window = window.fixed_size(self.config.interactive_size);
         } else {
             window = window.fixed_size(self.config.code_size);
@@ -131,11 +136,11 @@ impl Widget for &mut FunctionWidget<'_> {
 
         let window_response = window.show(ui.ctx(), |ui| {
             ui.horizontal(|ui| {
-                ui.selectable_value(&mut self.config.mode, "Interactive".to_owned(), "Interactive");
-                ui.selectable_value(&mut self.config.mode, "Code".to_owned(), "Code");
+                ui.selectable_value(&mut self.config.mode, WidgetMode::Signature, "Signature");
+                ui.selectable_value(&mut self.config.mode, WidgetMode::Code, "Code");
             });
 
-            if self.config.mode == "Code" {
+            if self.config.mode == WidgetMode::Code {
                 let language = "rs";
                 let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
 
@@ -195,9 +200,19 @@ impl Widget for &mut FunctionWidget<'_> {
                     columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| { 
                         let run_button_response = ui.add(run_button);
                         if run_button_response.hovered() {
-                            if let Ok(result) = self.engine.eval::<Map>(&self.config.runnable.code) {
+                            let prepend_code = format!(
+                                "{}{}{}",
+                                "let ",
+                                self.config.runnable.inputs.keys().cloned().collect::<Vec<String>>().join(" = 3; let "),
+                                " = 3;"
+                            ); 
+                            if let Ok(result) = self.config.engine.eval::<Map>(
+                                format!("{} {}", prepend_code, &self.config.runnable.code).as_str()
+                            ) {
                                 if let Some(val) = result.get("test") {
-                                    ui.label(val.clone().into_string().unwrap());
+                                    if val.is_int() {
+                                        ui.label(val.clone().as_int().unwrap().to_string());
+                                    }
                                 }
                             }
                         }
@@ -243,7 +258,7 @@ impl Widget for &mut FunctionWidget<'_> {
                 window_response.response.rect.contains(pointer.unwrap()) && 
                 i.consume_shortcut(&KeyboardShortcut::new(Modifiers::CTRL, Key::Q)) 
             {
-                self.config.mode = if self.config.mode == "Code" { "Interactive".to_owned() } else { "Code".to_owned() };
+                self.config.mode = if self.config.mode == WidgetMode::Signature { WidgetMode::Code } else { WidgetMode::Signature };
             }
         });
 

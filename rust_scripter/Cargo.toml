@@ -19,7 +19,6 @@ image = { version = "0.24", default-features = false, features = ["png"] }
 log = "0.4"
 vectorize = "0.2.0"
 ordered_hash_map = "0.4.0"
-runnable = { path = "../runnable" }
 rhai = { version = "1.12.0", features = ["only_i64", "internals", "wasm-bindgen"] }
 
 # You only need serde if you want app persistence:
