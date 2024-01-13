@@ -1,4 +1,4 @@
-use ordered_hash_map::OrderedHashMap;
+use indexmap::IndexMap;
 use rhai::Map;
 use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers};
 use serde::{Serialize, Deserialize};
@@ -13,6 +13,17 @@ pub struct LinkVertex {
 pub struct FunctionInputConfig {
     pub type_name: String,
     pub pos: Pos2,
+    pub should_be_deleted: bool,
+}
+
+impl Default for FunctionInputConfig {
+    fn default() -> Self {
+        Self {
+            type_name: "String".to_string(), 
+            pos: Pos2::default(),
+            should_be_deleted: false,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -20,21 +31,21 @@ pub struct Runnable {
     pub name: String,
     pub code: String,
     #[serde(with = "vectorize")]
-    pub inputs: OrderedHashMap<String, FunctionInputConfig>,
+    pub inputs: IndexMap<String, FunctionInputConfig>,
     #[serde(with = "vectorize")]
-    pub outputs: OrderedHashMap<String, FunctionInputConfig>,
+    pub outputs: IndexMap<String, FunctionInputConfig>,
 }
 
 impl Default for Runnable {
     fn default() -> Self {
-        let mut inputs = OrderedHashMap::new();
-        inputs.insert("Input1".into(), FunctionInputConfig { type_name: "String".to_string(), pos: Pos2::default() });
-        inputs.insert("Input2".into(), FunctionInputConfig { type_name: "String".to_string(), pos: Pos2::default() });
-        inputs.insert("Input3".into(), FunctionInputConfig { type_name: "String".to_string(), pos: Pos2::default() });
+        let mut inputs = IndexMap::new();
+        inputs.insert("Input1".into(), FunctionInputConfig::default());
+        inputs.insert("Input2".into(), FunctionInputConfig::default());
+        inputs.insert("Input3".into(), FunctionInputConfig::default());
 
-        let mut outputs = OrderedHashMap::new();
-        outputs.insert("Output1".into(), FunctionInputConfig { type_name: "String".to_string(), pos: Pos2::default() });
-        outputs.insert("Output2".into(), FunctionInputConfig { type_name: "String".to_string(), pos: Pos2::default() });
+        let mut outputs = IndexMap::new();
+        outputs.insert("Output1".into(), FunctionInputConfig::default());
+        outputs.insert("Output2".into(), FunctionInputConfig::default());
         Self { 
             name: "Function #0".to_owned(), 
             code: 
@@ -132,6 +143,14 @@ impl Widget for &mut FunctionWidget<'_> {
             window = window.fixed_size(self.config.code_size);
         }
 
+        self.config.runnable.inputs.retain(|_, input| {
+            !input.should_be_deleted
+        });
+
+        self.config.runnable.outputs.retain(|_, output| {
+            !output.should_be_deleted
+        });
+
         let pointer = ui.ctx().pointer_latest_pos();
 
         let window_response = window.show(ui.ctx(), |ui| {
@@ -195,6 +214,16 @@ impl Widget for &mut FunctionWidget<'_> {
                                 stroke
                             )
                         }
+
+                        label_response.context_menu(|ui| {
+                            if ui.button("Delete").clicked() {
+                                ele.1.should_be_deleted = true;
+                                ui.close_menu();
+                            }
+                        });
+                    };
+                    if columns[0].button("Add...").clicked() {
+                        self.config.runnable.inputs.insert("New input".to_string(), FunctionInputConfig::default());
                     };
                     let run_button = egui::Button::new("▶").rounding(5.0);
                     columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| { 
@@ -248,7 +277,17 @@ impl Widget for &mut FunctionWidget<'_> {
                                 stroke
                             )
                         }
+
+                        label_response.inner.context_menu(|ui| {
+                            if ui.button("Delete").clicked() {
+                                ele.1.should_be_deleted = true;
+                                ui.close_menu();
+                            }
+                        });
                     }
+                    if columns[2].button("Add...").clicked() {
+                        self.config.runnable.outputs.insert("New output".to_string(), FunctionInputConfig::default());
+                    };
                 });
             }
         }).unwrap();
