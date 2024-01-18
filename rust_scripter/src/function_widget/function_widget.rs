@@ -223,6 +223,12 @@ impl Widget for &mut FunctionWidget<'_> {
                             ele.1.is_edited = false;
                         }
 
+                        columns[0].input(|i| { 
+                            if i.key_pressed(Key::Escape) {
+                                ele.1.is_edited = false;       
+                            }
+                        });
+
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
                         if label_response.hovered() || is_circle_hovered {                            
                             circle_painter.circle(
@@ -306,6 +312,12 @@ impl Widget for &mut FunctionWidget<'_> {
                         if label_response.inner.lost_focus() || label_response.inner.clicked_elsewhere() {
                             ele.1.is_edited = false;
                         }
+
+                        columns[2].input(|i| { 
+                            if i.key_pressed(Key::Escape) {
+                                ele.1.is_edited = false;       
+                            }
+                        });
 
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
                         if label_response.inner.hovered() || is_circle_hovered {  
