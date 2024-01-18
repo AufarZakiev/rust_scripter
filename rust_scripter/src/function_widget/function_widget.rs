@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 use rhai::Map;
-use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers, Button, Rounding};
+use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers, Button, Rounding, TextEdit};
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -108,7 +108,7 @@ impl FunctionConfig {
     ) -> Self {
         Self { 
             position: initial_pos, 
-            interactive_size: Vec2 {x: 160.0, y: 100.0},
+            interactive_size: Vec2 {x: 200.0, y: 100.0},
             code_size: Vec2 {x: 400.0, y: 100.0},
             runnable,
             is_open,
@@ -188,8 +188,11 @@ impl Widget for &mut FunctionWidget<'_> {
                 
                 ui.columns(3, |columns| {
                     for ele in self.config.runnable.inputs.iter_mut() {
-                        let label = Label::new(ele.0.clone()).sense(Sense::click());
-                        let label_response = columns[0].add(label);
+                        let label_response = if !ele.1.is_edited { 
+                            columns[0].add(Label::new(ele.0.clone()).sense(Sense::click())) 
+                        } else {
+                            columns[0].add(TextEdit::singleline(&mut ele.0.clone()))
+                        };
 
                         let circle_rect = Rect::from_center_size(
                             label_response.rect.left_center() + Vec2 { x: -6.0, y: 0.0 },
@@ -209,6 +212,15 @@ impl Widget for &mut FunctionWidget<'_> {
 
                         if label_response.hovered() {
                             columns[0].painter().rect(label_response.rect.expand(1.5), Rounding::same(2.0), Color32::TRANSPARENT, stroke)
+                        }
+
+                        if label_response.double_clicked() {
+                            ele.1.is_edited = true;
+                            self.config.has_vertex = None;
+                        }
+
+                        if label_response.lost_focus() || label_response.clicked_elsewhere() {
+                            ele.1.is_edited = false;
                         }
 
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
@@ -259,8 +271,11 @@ impl Widget for &mut FunctionWidget<'_> {
                     });
                     for ele in self.config.runnable.outputs.iter_mut() {
                         let label_response = columns[2].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
-                            let label = Label::new(ele.0.clone()).sense(Sense::click());
-                            ui.add(label)
+                            if !ele.1.is_edited { 
+                                ui.add(Label::new(ele.0.clone()).sense(Sense::click())) 
+                            } else {
+                                ui.add(TextEdit::singleline(&mut ele.0.clone()))
+                            }
                         });
 
                         let circle_rect = Rect::from_center_size(
@@ -281,6 +296,15 @@ impl Widget for &mut FunctionWidget<'_> {
 
                         if label_response.inner.hovered() {
                             columns[2].painter().rect(label_response.response.rect.expand(1.5), Rounding::same(2.0), Color32::TRANSPARENT, stroke)
+                        }
+
+                        if label_response.inner.double_clicked() {
+                            ele.1.is_edited = true;
+                            self.config.has_vertex = None;
+                        }
+
+                        if label_response.inner.lost_focus() || label_response.inner.clicked_elsewhere() {
+                            ele.1.is_edited = false;
                         }
 
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
