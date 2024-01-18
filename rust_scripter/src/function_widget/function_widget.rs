@@ -51,7 +51,7 @@ impl Default for Runnable {
         Self { 
             name: "Function #0".to_owned(), 
             code: 
-r#"let val = #{test: Input1};
+r#"let val = #{Output1: Input1, Output2: Input2};
 val"#
             .to_string(),
             inputs,
@@ -267,9 +267,11 @@ impl Widget for &mut FunctionWidget<'_> {
                             if let Ok(result) = self.config.engine.eval::<Map>(
                                 format!("{} {}", prepend_code, &self.config.runnable.code).as_str()
                             ) {
-                                if let Some(val) = result.get("test") {
-                                    if val.is_int() {
-                                        ui.label(val.clone().as_int().unwrap().to_string());
+                                for ele in self.config.runnable.outputs.iter() {
+                                    if let Some(val) = result.get(ele.0.as_str()) {
+                                        if val.is_int() {
+                                            ui.label(val.clone().as_int().unwrap().to_string());
+                                        }
                                     }
                                 }
                             }
