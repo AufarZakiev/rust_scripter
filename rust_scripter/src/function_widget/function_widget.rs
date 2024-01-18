@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 use rhai::Map;
-use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers};
+use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers, RichText, Button, Rounding};
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -14,6 +14,7 @@ pub struct FunctionInputConfig {
     pub type_name: String,
     pub pos: Pos2,
     pub should_be_deleted: bool,
+    pub is_edited: bool,
 }
 
 impl Default for FunctionInputConfig {
@@ -22,6 +23,7 @@ impl Default for FunctionInputConfig {
             type_name: "String".to_string(), 
             pos: Pos2::default(),
             should_be_deleted: false,
+            is_edited: false,
         }
     }
 }
@@ -205,6 +207,10 @@ impl Widget for &mut FunctionWidget<'_> {
                             self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
                         }
 
+                        if label_response.hovered() {
+                            columns[0].painter().rect(label_response.rect, Rounding::same(2.0), Color32::TRANSPARENT, stroke)
+                        }
+
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
                         if label_response.hovered() || is_circle_hovered {                            
                             circle_painter.circle(
@@ -216,6 +222,11 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         label_response.context_menu(|ui| {
+                            let btn  = Button::new("Edit").shortcut_text("Double-click");
+                            if ui.add(btn).clicked() {
+                                ele.1.is_edited = true;
+                                ui.close_menu();
+                            }
                             if ui.button("Delete").clicked() {
                                 ele.1.should_be_deleted = true;
                                 ui.close_menu();
@@ -268,6 +279,10 @@ impl Widget for &mut FunctionWidget<'_> {
                             self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
                         }
 
+                        if label_response.inner.hovered() {
+                            columns[2].painter().rect(label_response.response.rect, Rounding::same(2.0), Color32::TRANSPARENT, stroke)
+                        }
+
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
                         if label_response.inner.hovered() || is_circle_hovered {  
                             circle_painter.circle(
@@ -279,6 +294,11 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         label_response.inner.context_menu(|ui| {
+                            let btn  = Button::new("Edit").shortcut_text("Double-click");
+                            if ui.add(btn).clicked() {
+                                ele.1.is_edited = true;
+                                ui.close_menu();
+                            }
                             if ui.button("Delete").clicked() {
                                 ele.1.should_be_deleted = true;
                                 ui.close_menu();
