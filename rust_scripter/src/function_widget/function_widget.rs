@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 use rhai::Map;
-use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers, RichText, Button, Rounding};
+use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers, Button, Rounding};
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -208,7 +208,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         if label_response.hovered() {
-                            columns[0].painter().rect(label_response.rect, Rounding::same(2.0), Color32::TRANSPARENT, stroke)
+                            columns[0].painter().rect(label_response.rect.expand(1.5), Rounding::same(2.0), Color32::TRANSPARENT, stroke)
                         }
 
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
@@ -280,7 +280,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         if label_response.inner.hovered() {
-                            columns[2].painter().rect(label_response.response.rect, Rounding::same(2.0), Color32::TRANSPARENT, stroke)
+                            columns[2].painter().rect(label_response.response.rect.expand(1.5), Rounding::same(2.0), Color32::TRANSPARENT, stroke)
                         }
 
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
