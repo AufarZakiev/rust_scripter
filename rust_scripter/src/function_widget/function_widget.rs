@@ -223,7 +223,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         });
                     };
                     if columns[0].button("Add...").clicked() {
-                        self.config.runnable.inputs.insert("New input".to_string(), FunctionInputConfig::default());
+                        self.config.runnable.inputs.insert("New...".to_string(), FunctionInputConfig::default());
                     };
                     let run_button = egui::Button::new("▶").rounding(5.0);
                     columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| { 
@@ -286,7 +286,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         });
                     }
                     if columns[2].button("Add...").clicked() {
-                        self.config.runnable.outputs.insert("New output".to_string(), FunctionInputConfig::default());
+                        self.config.runnable.outputs.insert("New...".to_string(), FunctionInputConfig::default());
                     };
                 });
             }
