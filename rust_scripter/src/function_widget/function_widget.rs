@@ -287,7 +287,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         });
 
                         let circle_rect = Rect::from_center_size(
-                            label_response.response.rect.right_center() + Vec2 { x: 8.0, y: 0.0 },
+                            label_response.response.rect.right_center() + Vec2 { x: 6.0, y: 0.0 },
                             Vec2 { x: 10.0, y: 10.0 }
                         );
                         circle_painter.circle(
