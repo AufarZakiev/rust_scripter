@@ -19,7 +19,7 @@ image = { version = "0.24", default-features = false, features = ["png"] }
 log = "0.4"
 vectorize = "0.2.0"
 indexmap = "2.1.0"
-rhai = { version = "1.12.0", features = ["only_i64", "internals", "wasm-bindgen"] }
+rhai = { version = "1.12.0", features = ["only_i64", "internals", "wasm-bindgen", "serde"] }
 
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }

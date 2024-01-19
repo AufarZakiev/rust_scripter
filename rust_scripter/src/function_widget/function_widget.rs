@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 use rhai::Map;
-use egui::{Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers, Button, Rounding, TextEdit};
+use egui::{TextStyle, Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers, Button, Rounding, TextEdit, Align2, vec2};
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -15,6 +15,7 @@ pub struct FunctionInputConfig {
     pub pos: Pos2,
     pub should_be_deleted: bool,
     pub is_edited: bool,
+    pub last_value: Option<rhai::Dynamic>,
 }
 
 impl Default for FunctionInputConfig {
@@ -24,6 +25,7 @@ impl Default for FunctionInputConfig {
             pos: Pos2::default(),
             should_be_deleted: false,
             is_edited: false,
+            last_value: None,
         }
     }
 }
@@ -154,6 +156,8 @@ impl Widget for &mut FunctionWidget<'_> {
         });
 
         let pointer = ui.ctx().pointer_latest_pos();
+        let font_id = TextStyle::Body.resolve(ui.style());
+        let visuals = ui.visuals();
 
         let window_response = window.show(ui.ctx(), |ui| {
             ui.horizontal(|ui| {
@@ -181,7 +185,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         .desired_width(f32::INFINITY)
                         .layouter(&mut layouter));
             } else {
-                let circle_painter = ui.ctx()
+                let painter = ui.ctx()
                     .layer_painter(LayerId::new(Order::Foreground, Id::new(self.config.runnable.name.clone())));
                 
                 let stroke = ui.visuals().widgets.hovered.bg_stroke;
@@ -198,7 +202,7 @@ impl Widget for &mut FunctionWidget<'_> {
                             label_response.rect.left_center() + Vec2 { x: -6.0, y: 0.0 },
                             Vec2 { x: 10.0, y: 10.0 }
                         );
-                        circle_painter.circle(
+                        painter.circle(
                             circle_rect.center(),
                             5.0,
                             Color32::from_rgb(128, 0, 0), 
@@ -231,7 +235,7 @@ impl Widget for &mut FunctionWidget<'_> {
 
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
                         if label_response.hovered() || is_circle_hovered {                            
-                            circle_painter.circle(
+                            painter.circle(
                                 circle_rect.center(),
                                 2.5,
                                 Color32::from_rgb(255, 255, 255), 
@@ -257,7 +261,7 @@ impl Widget for &mut FunctionWidget<'_> {
                     let run_button = egui::Button::new("▶").rounding(5.0);
                     columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| { 
                         let run_button_response = ui.add(run_button);
-                        if run_button_response.hovered() {
+                        if run_button_response.clicked() {
                             let prepend_code = format!(
                                 "{}{}{}",
                                 "let ",
@@ -267,11 +271,9 @@ impl Widget for &mut FunctionWidget<'_> {
                             if let Ok(result) = self.config.engine.eval::<Map>(
                                 format!("{} {}", prepend_code, &self.config.runnable.code).as_str()
                             ) {
-                                for ele in self.config.runnable.outputs.iter() {
+                                for ele in self.config.runnable.outputs.iter_mut() {
                                     if let Some(val) = result.get(ele.0.as_str()) {
-                                        if val.is_int() {
-                                            ui.label(val.clone().as_int().unwrap().to_string());
-                                        }
+                                        ele.1.last_value = Some(val.clone());
                                     }
                                 }
                             }
@@ -290,13 +292,35 @@ impl Widget for &mut FunctionWidget<'_> {
                             label_response.response.rect.right_center() + Vec2 { x: 6.0, y: 0.0 },
                             Vec2 { x: 10.0, y: 10.0 }
                         );
-                        circle_painter.circle(
+                        painter.circle(
                             circle_rect.center(),
                             5.0,
                             Color32::from_rgb(128, 0, 0), 
                             stroke
                         );
                         ele.1.pos = circle_rect.center();
+                        
+                        if let Some(ref last_value) = ele.1.last_value {
+                            if last_value.is_int() {
+                                let layout = painter.layout_no_wrap(
+                                    last_value.clone().as_int().unwrap().to_string(), 
+                                    font_id.clone(), 
+                                    visuals.text_color()
+                                );
+                                painter.rect(
+                                    Rect::from_center_size(circle_rect.center() + Vec2 {x: 15.0, y: 0.0}, layout.rect.size()).expand2(vec2(1.0, 0.0)), 
+                                    Rounding::same(1.5), Color32::LIGHT_GRAY, 
+                                    stroke
+                                );
+                                let val_rect = painter.text(
+                                    circle_rect.center() + Vec2 {x: 15.0, y: 0.0}, 
+                                    Align2::CENTER_CENTER, 
+                                    last_value.clone().as_int().unwrap().to_string(), 
+                                    font_id.clone(), 
+                                    visuals.text_color()
+                                );
+                            }
+                        }
 
                         if label_response.inner.clicked() {
                             self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
@@ -323,7 +347,7 @@ impl Widget for &mut FunctionWidget<'_> {
 
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
                         if label_response.inner.hovered() || is_circle_hovered {  
-                            circle_painter.circle(
+                            painter.circle(
                                 circle_rect.center(),
                                 2.5,
                                 Color32::from_rgb(255, 255, 255), 
