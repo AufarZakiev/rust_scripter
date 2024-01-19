@@ -312,7 +312,7 @@ impl Widget for &mut FunctionWidget<'_> {
                                     Rounding::same(1.5), Color32::LIGHT_GRAY, 
                                     stroke
                                 );
-                                let val_rect = painter.text(
+                                painter.text(
                                     circle_rect.center() + Vec2 {x: 15.0, y: 0.0}, 
                                     Align2::CENTER_CENTER, 
                                     last_value.clone().as_int().unwrap().to_string(), 
