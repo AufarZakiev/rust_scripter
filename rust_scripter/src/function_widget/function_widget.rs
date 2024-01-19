@@ -14,7 +14,7 @@ pub struct FunctionInputConfig {
     pub type_name: String,
     pub pos: Pos2,
     pub should_be_deleted: bool,
-    pub is_edited: bool,
+    pub is_editing: bool,
     pub last_value: Option<rhai::Dynamic>,
 }
 
@@ -24,7 +24,7 @@ impl Default for FunctionInputConfig {
             type_name: "String".to_string(), 
             pos: Pos2::default(),
             should_be_deleted: false,
-            is_edited: false,
+            is_editing: false,
             last_value: None,
         }
     }
@@ -63,8 +63,22 @@ val"#
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct RenameOptions {
+    pub new_name: String, 
+    pub old_name: String,
+}
+
+impl Default for RenameOptions {
+    fn default() -> Self {
+        Self { new_name: Default::default(), old_name: Default::default() }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct FunctionConfig {
+    // Actual code of function
     pub runnable: Runnable,
+    // Visual state
     pub position: Pos2,
     pub interactive_size: Vec2,
     pub code_size: Vec2,
@@ -72,6 +86,9 @@ pub struct FunctionConfig {
     pub is_collapsed: bool,
     pub has_vertex: Option<LinkVertex>,
     pub mode: WidgetMode,
+    // Temp values
+    pub entry_rename: Option<RenameOptions>,
+    // Engine to run the code
     #[serde(skip, default = "rhai::Engine::new")]
     pub engine: rhai::Engine,
 }
@@ -117,6 +134,7 @@ impl FunctionConfig {
             is_collapsed,
             has_vertex: None,
             mode: WidgetMode::Signature,
+            entry_rename: None, 
             engine: rhai::Engine::new(),
         }
     }
@@ -150,6 +168,19 @@ impl Widget for &mut FunctionWidget<'_> {
         self.config.runnable.inputs.retain(|_, input| {
             !input.should_be_deleted
         });
+
+        if let Some(ref rename_options) = self.config.entry_rename {
+            if !self.config.runnable.inputs.get(&rename_options.old_name).expect(
+                format!("No entry found with old name {}", rename_options.old_name).as_str()
+            ).is_editing {
+                // SAFETY: We know for sure that entry with old name exists by this moment
+                let old_config = self.config.runnable.inputs.remove(&rename_options.old_name).expect(
+                    format!("No entry found with old name {}", rename_options.old_name).as_str()
+                );
+                self.config.runnable.inputs.insert(rename_options.new_name.clone(), old_config);
+                self.config.entry_rename = None;
+            }
+        }
 
         self.config.runnable.outputs.retain(|_, output| {
             !output.should_be_deleted
@@ -192,10 +223,13 @@ impl Widget for &mut FunctionWidget<'_> {
                 
                 ui.columns(3, |columns| {
                     for ele in self.config.runnable.inputs.iter_mut() {
-                        let label_response = if !ele.1.is_edited { 
+                        let label_response = if !ele.1.is_editing { 
                             columns[0].add(Label::new(ele.0.clone()).sense(Sense::click())) 
                         } else {
-                            columns[0].add(TextEdit::singleline(&mut ele.0.clone()))
+                            if self.config.entry_rename.is_none() {
+                                self.config.entry_rename = Some(RenameOptions {new_name: ele.0.clone(), old_name: ele.0.clone()});
+                            }
+                            columns[0].add(TextEdit::singleline(&mut self.config.entry_rename.as_mut().expect("Entry rename was not inited").new_name))
                         };
 
                         let circle_rect = Rect::from_center_size(
@@ -210,7 +244,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         );
                         ele.1.pos = circle_rect.center();
 
-                        if label_response.clicked() {
+                        if label_response.clicked() && !ele.1.is_editing {
                             self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
                         }
 
@@ -219,19 +253,26 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         if label_response.double_clicked() {
-                            ele.1.is_edited = true;
+                            ele.1.is_editing = true;
                             self.config.has_vertex = None;
                         }
 
-                        if label_response.lost_focus() || label_response.clicked_elsewhere() {
-                            ele.1.is_edited = false;
+                        if label_response.clicked_elsewhere() {
+                            ele.1.is_editing = false;
+                            self.config.entry_rename = None;
                         }
 
-                        columns[0].input(|i| { 
-                            if i.key_pressed(Key::Escape) {
-                                ele.1.is_edited = false;       
-                            }
-                        });
+                        if ele.1.is_editing {
+                            columns[0].input(|i| { 
+                                if i.key_pressed(Key::Escape) {
+                                    ele.1.is_editing = false;   
+                                    self.config.entry_rename = None;    
+                                }
+                                if i.key_pressed(Key::Enter) {
+                                    ele.1.is_editing = false;
+                                }
+                            });
+                        }
 
                         let is_circle_hovered = pointer.is_some() && circle_rect.contains(pointer.unwrap());
                         if label_response.hovered() || is_circle_hovered {                            
@@ -246,7 +287,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         label_response.context_menu(|ui| {
                             let btn  = Button::new("Edit").shortcut_text("Double-click");
                             if ui.add(btn).clicked() {
-                                ele.1.is_edited = true;
+                                ele.1.is_editing = true;
                                 ui.close_menu();
                             }
                             if ui.button("Delete").clicked() {
@@ -281,7 +322,7 @@ impl Widget for &mut FunctionWidget<'_> {
                     });
                     for ele in self.config.runnable.outputs.iter_mut() {
                         let label_response = columns[2].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
-                            if !ele.1.is_edited { 
+                            if !ele.1.is_editing { 
                                 ui.add(Label::new(ele.0.clone()).sense(Sense::click())) 
                             } else {
                                 ui.add(TextEdit::singleline(&mut ele.0.clone()))
@@ -331,17 +372,21 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         if label_response.inner.double_clicked() {
-                            ele.1.is_edited = true;
+                            ele.1.is_editing = true;
                             self.config.has_vertex = None;
                         }
 
                         if label_response.inner.lost_focus() || label_response.inner.clicked_elsewhere() {
-                            ele.1.is_edited = false;
+                            ele.1.is_editing = false;
                         }
 
                         columns[2].input(|i| { 
                             if i.key_pressed(Key::Escape) {
-                                ele.1.is_edited = false;       
+                                ele.1.is_editing = false;
+                                self.config.entry_rename = None;
+                            }
+                            if i.key_pressed(Key::Enter) {
+                                ele.1.is_editing = false;
                             }
                         });
 
@@ -358,7 +403,7 @@ impl Widget for &mut FunctionWidget<'_> {
                         label_response.inner.context_menu(|ui| {
                             let btn  = Button::new("Edit").shortcut_text("Double-click");
                             if ui.add(btn).clicked() {
-                                ele.1.is_edited = true;
+                                ele.1.is_editing = true;
                                 ui.close_menu();
                             }
                             if ui.button("Delete").clicked() {

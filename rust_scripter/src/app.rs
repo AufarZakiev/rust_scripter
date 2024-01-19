@@ -151,6 +151,16 @@ impl eframe::App for TemplateApp {
 
         self.rects.retain(|ele| {ele.is_open});
 
+        // for ele in self.rects.iter() {
+        //     if let Some(ref rename_options) = ele.entry_rename {
+        //         for link in self.links.iter_mut() {
+        //             if link.start.entry_name == rename_options.old_name {
+        //                 link.start.entry_name = rename_options.old_name;
+        //             }
+        //         }
+        //     }
+        // }
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
 
