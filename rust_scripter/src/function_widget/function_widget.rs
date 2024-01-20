@@ -83,6 +83,16 @@ val"#
     }
 }
 
+impl Runnable {
+    pub fn get_entry_by_vertex(&self, vertex: &LinkVertex) -> Pos2 {
+        if vertex.param_type == ParamType::Input {
+            self.inputs.get(vertex.entry_idx).unwrap().pos
+        } else {
+            self.outputs.get(vertex.entry_idx).unwrap().pos
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct RenameOptions {
     pub rename_idx: usize, 

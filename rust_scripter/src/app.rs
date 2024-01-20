@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 use egui::{Pos2, Sense, epaint::CubicBezierShape, Key, Rect, Vec2, Label};
 use serde::{Serialize, Deserialize};
 
@@ -75,7 +73,7 @@ impl TemplateApp {
         for current_link in self.links.iter_mut() {
             let start_point_widget = self.rects.iter()
                 .find(|p| p.runnable.name == current_link.start.function_name)
-                .expect(format!("Non-connected link is found: function '{}' is not found", current_link.end.function_name).as_str());
+                .expect(format!("Non-connected link is found: function '{}' is not found", current_link.start.function_name).as_str());
 
             let start_point = if start_point_widget.is_collapsed {
                 Pos2 {
@@ -88,11 +86,7 @@ impl TemplateApp {
                     y: start_point_widget.position.y + 16.0,
                 }
             } else {
-                if current_link.start.param_type == ParamType::Input {
-                    start_point_widget.runnable.inputs.index(current_link.start.entry_idx).pos
-                } else {
-                    start_point_widget.runnable.outputs.index(current_link.start.entry_idx).pos
-                }
+                start_point_widget.runnable.get_entry_by_vertex(&current_link.start)
             };
 
             let end_point_widget = self.rects.iter()
@@ -105,11 +99,7 @@ impl TemplateApp {
                     y: end_point_widget.position.y + 16.0,
                 }
             } else {
-                if current_link.end.param_type == ParamType::Input {
-                    end_point_widget.runnable.inputs.index(current_link.end.entry_idx).pos
-                } else {
-                    end_point_widget.runnable.outputs.index(current_link.end.entry_idx).pos
-                }
+                end_point_widget.runnable.get_entry_by_vertex(&current_link.end)
             };
 
             let second_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y};
@@ -236,11 +226,7 @@ fn create_link_if_clicked(fw: &Vec<FunctionWidget<'_>>, ui: &mut egui::Ui, strok
     if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
         if let Some(link_end) = ui.ctx().pointer_latest_pos() {
             let link_start = link_start_widget.config.has_vertex.clone().unwrap();
-            let link_start_pos = if link_start.param_type == ParamType::Input {
-                link_start_widget.config.runnable.inputs.index(link_start.entry_idx).pos
-            } else {
-                link_start_widget.config.runnable.outputs.index(link_start.entry_idx).pos
-            };
+            let link_start_pos = link_start_widget.config.runnable.get_entry_by_vertex(&link_start);
 
             let second_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_start_pos.y};
             let third_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_end.y };
