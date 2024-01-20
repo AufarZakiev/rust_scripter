@@ -240,12 +240,12 @@ impl Widget for &mut FunctionWidget<'_> {
                 let stroke = ui.visuals().widgets.hovered.bg_stroke;
                 
                 ui.columns(3, |columns| {
-                    for (idx, ele) in self.config.runnable.inputs.iter_mut().enumerate() {
-                        let label_response = if !ele.is_editing { 
-                            columns[0].add(Label::new(ele.param_name.clone()).sense(Sense::click())) 
+                    for (idx, input) in self.config.runnable.inputs.iter_mut().enumerate() {
+                        let label_response = if !input.is_editing { 
+                            columns[0].add(Label::new(input.param_name.clone()).sense(Sense::click())) 
                         } else {
                             if self.config.entry_rename.is_none() {
-                                self.config.entry_rename = Some(RenameOptions {rename_idx: idx, new_name: ele.param_name.clone()});
+                                self.config.entry_rename = Some(RenameOptions {rename_idx: idx, new_name: input.param_name.clone()});
                             }
                             columns[0].add(TextEdit::singleline(&mut self.config.entry_rename.as_mut().expect("Entry rename was not inited").new_name))
                         };
@@ -260,9 +260,9 @@ impl Widget for &mut FunctionWidget<'_> {
                             Color32::from_rgb(128, 0, 0), 
                             stroke
                         );
-                        ele.pos = circle_rect.center();
+                        input.pos = circle_rect.center();
 
-                        if label_response.clicked() && !ele.is_editing {
+                        if label_response.clicked() && !input.is_editing {
                             self.config.has_vertex = Some(LinkVertex { 
                                 function_name: self.config.runnable.name.clone(), param_type: ParamType::Input, entry_idx: idx 
                             });
@@ -273,23 +273,23 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         if label_response.double_clicked() {
-                            ele.is_editing = true;
+                            input.is_editing = true;
                             self.config.has_vertex = None;
                         }
 
                         if label_response.clicked_elsewhere() {
-                            ele.is_editing = false;
+                            input.is_editing = false;
                             self.config.entry_rename = None;
                         }
 
-                        if ele.is_editing {
+                        if input.is_editing {
                             columns[0].input(|i| { 
                                 if i.key_pressed(Key::Escape) {
-                                    ele.is_editing = false;   
+                                    input.is_editing = false;   
                                     self.config.entry_rename = None;    
                                 }
                                 if i.key_pressed(Key::Enter) {
-                                    ele.is_editing = false;
+                                    input.is_editing = false;
                                 }
                             });
                         }
@@ -307,11 +307,11 @@ impl Widget for &mut FunctionWidget<'_> {
                         label_response.context_menu(|ui| {
                             let btn  = Button::new("Edit").shortcut_text("Double-click");
                             if ui.add(btn).clicked() {
-                                ele.is_editing = true;
+                                input.is_editing = true;
                                 ui.close_menu();
                             }
                             if ui.button("Delete").clicked() {
-                                ele.should_be_deleted = true;
+                                input.should_be_deleted = true;
                                 ui.close_menu();
                             }
                         });
@@ -340,12 +340,12 @@ impl Widget for &mut FunctionWidget<'_> {
                             }
                         }
                     });
-                    for (idx, ele) in self.config.runnable.outputs.iter_mut().enumerate() {
+                    for (idx, output) in self.config.runnable.outputs.iter_mut().enumerate() {
                         let label_response = columns[2].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
-                            if !ele.is_editing { 
-                                ui.add(Label::new(ele.param_name.clone()).sense(Sense::click())) 
+                            if !output.is_editing { 
+                                ui.add(Label::new(output.param_name.clone()).sense(Sense::click())) 
                             } else {
-                                ui.add(TextEdit::singleline(&mut ele.param_name.clone()))
+                                ui.add(TextEdit::singleline(&mut output.param_name.clone()))
                             }
                         });
 
@@ -359,9 +359,9 @@ impl Widget for &mut FunctionWidget<'_> {
                             Color32::from_rgb(128, 0, 0), 
                             stroke
                         );
-                        ele.pos = circle_rect.center();
+                        output.pos = circle_rect.center();
                         
-                        if let Some(ref last_value) = ele.last_value {
+                        if let Some(ref last_value) = output.last_value {
                             if last_value.is_int() {
                                 let layout = painter.layout_no_wrap(
                                     last_value.clone().as_int().unwrap().to_string(), 
@@ -396,21 +396,21 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         if label_response.inner.double_clicked() {
-                            ele.is_editing = true;
+                            output.is_editing = true;
                             self.config.has_vertex = None;
                         }
 
                         if label_response.inner.lost_focus() || label_response.inner.clicked_elsewhere() {
-                            ele.is_editing = false;
+                            output.is_editing = false;
                         }
 
                         columns[2].input(|i| { 
                             if i.key_pressed(Key::Escape) {
-                                ele.is_editing = false;
+                                output.is_editing = false;
                                 self.config.entry_rename = None;
                             }
                             if i.key_pressed(Key::Enter) {
-                                ele.is_editing = false;
+                                output.is_editing = false;
                             }
                         });
 
@@ -427,11 +427,11 @@ impl Widget for &mut FunctionWidget<'_> {
                         label_response.inner.context_menu(|ui| {
                             let btn  = Button::new("Edit").shortcut_text("Double-click");
                             if ui.add(btn).clicked() {
-                                ele.is_editing = true;
+                                output.is_editing = true;
                                 ui.close_menu();
                             }
                             if ui.button("Delete").clicked() {
-                                ele.should_be_deleted = true;
+                                output.should_be_deleted = true;
                                 ui.close_menu();
                             }
                         });
