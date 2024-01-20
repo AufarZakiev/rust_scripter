@@ -1,16 +1,23 @@
-use indexmap::IndexMap;
 use rhai::Map;
 use egui::{TextStyle, Pos2, widgets::Widget, Sense, Color32, Rect, Vec2, Order, LayerId, Id, Align, Label, Window, Key, KeyboardShortcut, Modifiers, Button, Rounding, TextEdit, Align2, vec2};
 use serde::{Serialize, Deserialize};
 
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
+pub enum ParamType {
+    Input,
+    Output
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct LinkVertex {
     pub function_name: String,
-    pub entry_name: String,
+    pub param_type: ParamType,
+    pub entry_idx: usize,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct FunctionInputConfig {
+pub struct FunctionParam {
+    pub param_name: String,
     pub type_name: String,
     pub pos: Pos2,
     pub should_be_deleted: bool,
@@ -18,9 +25,23 @@ pub struct FunctionInputConfig {
     pub last_value: Option<rhai::Dynamic>,
 }
 
-impl Default for FunctionInputConfig {
+impl Default for FunctionParam {
     fn default() -> Self {
         Self {
+            param_name: "New...".to_string(),
+            type_name: "String".to_string(), 
+            pos: Pos2::default(),
+            should_be_deleted: false,
+            is_editing: false,
+            last_value: None,
+        }
+    }
+}
+
+impl FunctionParam {
+    fn default_with_name(name: &str) -> Self {
+        Self {
+            param_name: name.to_string(),
             type_name: "String".to_string(), 
             pos: Pos2::default(),
             should_be_deleted: false,
@@ -34,22 +55,22 @@ impl Default for FunctionInputConfig {
 pub struct Runnable {
     pub name: String,
     pub code: String,
-    #[serde(with = "vectorize")]
-    pub inputs: IndexMap<String, FunctionInputConfig>,
-    #[serde(with = "vectorize")]
-    pub outputs: IndexMap<String, FunctionInputConfig>,
+    pub inputs: Vec<FunctionParam>,
+    pub outputs: Vec<FunctionParam>,
 }
 
 impl Default for Runnable {
     fn default() -> Self {
-        let mut inputs = IndexMap::new();
-        inputs.insert("Input1".into(), FunctionInputConfig::default());
-        inputs.insert("Input2".into(), FunctionInputConfig::default());
-        inputs.insert("Input3".into(), FunctionInputConfig::default());
+        let inputs = vec![
+            FunctionParam::default_with_name("Input1"),
+            FunctionParam::default_with_name("Input2"),
+            FunctionParam::default_with_name("Input3"),
+        ];
 
-        let mut outputs = IndexMap::new();
-        outputs.insert("Output1".into(), FunctionInputConfig::default());
-        outputs.insert("Output2".into(), FunctionInputConfig::default());
+        let outputs = vec![
+            FunctionParam::default_with_name("Output1"),
+            FunctionParam::default_with_name("Output2"),
+        ];
         Self { 
             name: "Function #0".to_owned(), 
             code: 
@@ -64,13 +85,13 @@ val"#
 
 #[derive(Serialize, Deserialize)]
 pub struct RenameOptions {
-    pub new_name: String, 
-    pub old_name: String,
+    pub rename_idx: usize, 
+    pub new_name: String,
 }
 
 impl Default for RenameOptions {
     fn default() -> Self {
-        Self { new_name: Default::default(), old_name: Default::default() }
+        Self { rename_idx: Default::default(), new_name: Default::default() }
     }
 }
 
@@ -113,10 +134,6 @@ impl FunctionConfig {
         def.runnable.name = name;
         def.position = initial_pos;
         def
-    }
-
-    pub fn get_entry(self: &Self, entry_name: &String) -> Option<&FunctionInputConfig> {
-        return self.runnable.inputs.get(entry_name).or_else(|| {self.runnable.outputs.get(entry_name)});
     }
 
     pub fn new(
@@ -165,24 +182,15 @@ impl Widget for &mut FunctionWidget<'_> {
             window = window.fixed_size(self.config.code_size);
         }
 
-        self.config.runnable.inputs.retain(|_, input| {
+        self.config.runnable.inputs.retain(|input| {
             !input.should_be_deleted
         });
 
         if let Some(ref rename_options) = self.config.entry_rename {
-            if !self.config.runnable.inputs.get(&rename_options.old_name).expect(
-                format!("No entry found with old name {}", rename_options.old_name).as_str()
-            ).is_editing {
-                // SAFETY: We know for sure that entry with old name exists by this moment
-                let old_config = self.config.runnable.inputs.remove(&rename_options.old_name).expect(
-                    format!("No entry found with old name {}", rename_options.old_name).as_str()
-                );
-                self.config.runnable.inputs.insert(rename_options.new_name.clone(), old_config);
-                self.config.entry_rename = None;
-            }
+            self.config.runnable.inputs.get_mut(rename_options.rename_idx).expect("TODO Eror").param_name = rename_options.new_name.clone();
         }
 
-        self.config.runnable.outputs.retain(|_, output| {
+        self.config.runnable.outputs.retain(|output| {
             !output.should_be_deleted
         });
 
@@ -222,12 +230,12 @@ impl Widget for &mut FunctionWidget<'_> {
                 let stroke = ui.visuals().widgets.hovered.bg_stroke;
                 
                 ui.columns(3, |columns| {
-                    for ele in self.config.runnable.inputs.iter_mut() {
-                        let label_response = if !ele.1.is_editing { 
-                            columns[0].add(Label::new(ele.0.clone()).sense(Sense::click())) 
+                    for (idx, ele) in self.config.runnable.inputs.iter_mut().enumerate() {
+                        let label_response = if !ele.is_editing { 
+                            columns[0].add(Label::new(ele.param_name.clone()).sense(Sense::click())) 
                         } else {
                             if self.config.entry_rename.is_none() {
-                                self.config.entry_rename = Some(RenameOptions {new_name: ele.0.clone(), old_name: ele.0.clone()});
+                                self.config.entry_rename = Some(RenameOptions {rename_idx: idx, new_name: ele.param_name.clone()});
                             }
                             columns[0].add(TextEdit::singleline(&mut self.config.entry_rename.as_mut().expect("Entry rename was not inited").new_name))
                         };
@@ -242,10 +250,12 @@ impl Widget for &mut FunctionWidget<'_> {
                             Color32::from_rgb(128, 0, 0), 
                             stroke
                         );
-                        ele.1.pos = circle_rect.center();
+                        ele.pos = circle_rect.center();
 
-                        if label_response.clicked() && !ele.1.is_editing {
-                            self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
+                        if label_response.clicked() && !ele.is_editing {
+                            self.config.has_vertex = Some(LinkVertex { 
+                                function_name: self.config.runnable.name.clone(), param_type: ParamType::Input, entry_idx: idx 
+                            });
                         }
 
                         if label_response.hovered() {
@@ -253,23 +263,23 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         if label_response.double_clicked() {
-                            ele.1.is_editing = true;
+                            ele.is_editing = true;
                             self.config.has_vertex = None;
                         }
 
                         if label_response.clicked_elsewhere() {
-                            ele.1.is_editing = false;
+                            ele.is_editing = false;
                             self.config.entry_rename = None;
                         }
 
-                        if ele.1.is_editing {
+                        if ele.is_editing {
                             columns[0].input(|i| { 
                                 if i.key_pressed(Key::Escape) {
-                                    ele.1.is_editing = false;   
+                                    ele.is_editing = false;   
                                     self.config.entry_rename = None;    
                                 }
                                 if i.key_pressed(Key::Enter) {
-                                    ele.1.is_editing = false;
+                                    ele.is_editing = false;
                                 }
                             });
                         }
@@ -287,17 +297,17 @@ impl Widget for &mut FunctionWidget<'_> {
                         label_response.context_menu(|ui| {
                             let btn  = Button::new("Edit").shortcut_text("Double-click");
                             if ui.add(btn).clicked() {
-                                ele.1.is_editing = true;
+                                ele.is_editing = true;
                                 ui.close_menu();
                             }
                             if ui.button("Delete").clicked() {
-                                ele.1.should_be_deleted = true;
+                                ele.should_be_deleted = true;
                                 ui.close_menu();
                             }
                         });
                     };
                     if columns[0].button("Add...").clicked() {
-                        self.config.runnable.inputs.insert("New...".to_string(), FunctionInputConfig::default());
+                        self.config.runnable.inputs.push(FunctionParam::default());
                     };
                     let run_button = egui::Button::new("▶").rounding(5.0);
                     columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| { 
@@ -306,26 +316,26 @@ impl Widget for &mut FunctionWidget<'_> {
                             let prepend_code = format!(
                                 "{}{}{}",
                                 "let ",
-                                self.config.runnable.inputs.keys().cloned().collect::<Vec<String>>().join(" = 3; let "),
+                                self.config.runnable.inputs.iter().map(|input| input.param_name.clone()).collect::<Vec<String>>().join(" = 3; let "),
                                 " = 3;"
                             ); 
                             if let Ok(result) = self.config.engine.eval::<Map>(
                                 format!("{} {}", prepend_code, &self.config.runnable.code).as_str()
                             ) {
                                 for ele in self.config.runnable.outputs.iter_mut() {
-                                    if let Some(val) = result.get(ele.0.as_str()) {
-                                        ele.1.last_value = Some(val.clone());
+                                    if let Some(val) = result.get(ele.param_name.as_str()) {
+                                        ele.last_value = Some(val.clone());
                                     }
                                 }
                             }
                         }
                     });
-                    for ele in self.config.runnable.outputs.iter_mut() {
+                    for (idx, ele) in self.config.runnable.outputs.iter_mut().enumerate() {
                         let label_response = columns[2].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
-                            if !ele.1.is_editing { 
-                                ui.add(Label::new(ele.0.clone()).sense(Sense::click())) 
+                            if !ele.is_editing { 
+                                ui.add(Label::new(ele.param_name.clone()).sense(Sense::click())) 
                             } else {
-                                ui.add(TextEdit::singleline(&mut ele.0.clone()))
+                                ui.add(TextEdit::singleline(&mut ele.param_name.clone()))
                             }
                         });
 
@@ -339,9 +349,9 @@ impl Widget for &mut FunctionWidget<'_> {
                             Color32::from_rgb(128, 0, 0), 
                             stroke
                         );
-                        ele.1.pos = circle_rect.center();
+                        ele.pos = circle_rect.center();
                         
-                        if let Some(ref last_value) = ele.1.last_value {
+                        if let Some(ref last_value) = ele.last_value {
                             if last_value.is_int() {
                                 let layout = painter.layout_no_wrap(
                                     last_value.clone().as_int().unwrap().to_string(), 
@@ -364,7 +374,11 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         if label_response.inner.clicked() {
-                            self.config.has_vertex = Some(LinkVertex { function_name: self.config.runnable.name.clone(), entry_name: ele.0.clone() });
+                            self.config.has_vertex = Some(LinkVertex { 
+                                function_name: self.config.runnable.name.clone(), 
+                                param_type: ParamType::Output,
+                                entry_idx: idx 
+                            });
                         }
 
                         if label_response.inner.hovered() {
@@ -372,21 +386,21 @@ impl Widget for &mut FunctionWidget<'_> {
                         }
 
                         if label_response.inner.double_clicked() {
-                            ele.1.is_editing = true;
+                            ele.is_editing = true;
                             self.config.has_vertex = None;
                         }
 
                         if label_response.inner.lost_focus() || label_response.inner.clicked_elsewhere() {
-                            ele.1.is_editing = false;
+                            ele.is_editing = false;
                         }
 
                         columns[2].input(|i| { 
                             if i.key_pressed(Key::Escape) {
-                                ele.1.is_editing = false;
+                                ele.is_editing = false;
                                 self.config.entry_rename = None;
                             }
                             if i.key_pressed(Key::Enter) {
-                                ele.1.is_editing = false;
+                                ele.is_editing = false;
                             }
                         });
 
@@ -403,17 +417,17 @@ impl Widget for &mut FunctionWidget<'_> {
                         label_response.inner.context_menu(|ui| {
                             let btn  = Button::new("Edit").shortcut_text("Double-click");
                             if ui.add(btn).clicked() {
-                                ele.1.is_editing = true;
+                                ele.is_editing = true;
                                 ui.close_menu();
                             }
                             if ui.button("Delete").clicked() {
-                                ele.1.should_be_deleted = true;
+                                ele.should_be_deleted = true;
                                 ui.close_menu();
                             }
                         });
                     }
                     if columns[2].button("Add...").clicked() {
-                        self.config.runnable.outputs.insert("New...".to_string(), FunctionInputConfig::default());
+                        self.config.runnable.outputs.push(FunctionParam::default());
                     };
                 });
             }

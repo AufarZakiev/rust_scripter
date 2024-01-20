@@ -1,8 +1,10 @@
+use std::ops::Index;
+
 use egui::{Pos2, Sense, epaint::CubicBezierShape, Key, Rect, Vec2, Label};
 use serde::{Serialize, Deserialize};
 
 use crate::function_widget::function_widget::{FunctionConfig, FunctionWidget, LinkVertex};
-use crate::function_widget::function_widget::WidgetMode;
+use crate::function_widget::function_widget::{WidgetMode, ParamType};
 
 #[derive(Deserialize, Serialize)]
 struct Link {
@@ -29,8 +31,8 @@ impl Default for TemplateApp {
             ],
             links: vec![
                 Link { 
-                    start: LinkVertex { function_name: "Function #0".to_owned(), entry_name: "Output1".to_owned() },
-                    end: LinkVertex { function_name: "Function #1".to_owned(), entry_name: "Input1".to_owned() },
+                    start: LinkVertex { function_name: "Function #0".to_owned(), param_type: ParamType::Input, entry_idx: 0 },
+                    end: LinkVertex { function_name: "Function #1".to_owned(), param_type: ParamType::Output, entry_idx: 0 },
                     should_be_deleted: false
                 }
             ],
@@ -86,9 +88,11 @@ impl TemplateApp {
                     y: start_point_widget.position.y + 16.0,
                 }
             } else {
-                start_point_widget.get_entry(&current_link.start.entry_name)
-                .expect(format!("Non-connected link is found: output '{}' is not found in '{}'", current_link.start.entry_name, current_link.start.function_name).as_str())
-                .pos
+                if current_link.start.param_type == ParamType::Input {
+                    start_point_widget.runnable.inputs.index(current_link.start.entry_idx).pos
+                } else {
+                    start_point_widget.runnable.outputs.index(current_link.start.entry_idx).pos
+                }
             };
 
             let end_point_widget = self.rects.iter()
@@ -101,10 +105,11 @@ impl TemplateApp {
                     y: end_point_widget.position.y + 16.0,
                 }
             } else {
-                end_point_widget
-                .get_entry(&current_link.end.entry_name)
-                .expect(format!("Non-connected link is found: input '{}' is not found in '{}'", current_link.end.entry_name, current_link.end.function_name).as_str())
-                .pos
+                if current_link.end.param_type == ParamType::Input {
+                    end_point_widget.runnable.inputs.index(current_link.end.entry_idx).pos
+                } else {
+                    end_point_widget.runnable.outputs.index(current_link.end.entry_idx).pos
+                }
             };
 
             let second_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y};
@@ -150,16 +155,6 @@ impl eframe::App for TemplateApp {
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
         self.rects.retain(|ele| {ele.is_open});
-
-        // for ele in self.rects.iter() {
-        //     if let Some(ref rename_options) = ele.entry_rename {
-        //         for link in self.links.iter_mut() {
-        //             if link.start.entry_name == rename_options.old_name {
-        //                 link.start.entry_name = rename_options.old_name;
-        //             }
-        //         }
-        //     }
-        // }
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
@@ -241,8 +236,11 @@ fn create_link_if_clicked(fw: &Vec<FunctionWidget<'_>>, ui: &mut egui::Ui, strok
     if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
         if let Some(link_end) = ui.ctx().pointer_latest_pos() {
             let link_start = link_start_widget.config.has_vertex.clone().unwrap();
-            let link_start_pos = link_start_widget.config.get_entry(&link_start.entry_name)
-                .expect(format!("Not found entry named {}", link_start.entry_name).as_str()).pos;
+            let link_start_pos = if link_start.param_type == ParamType::Input {
+                link_start_widget.config.runnable.inputs.index(link_start.entry_idx).pos
+            } else {
+                link_start_widget.config.runnable.outputs.index(link_start.entry_idx).pos
+            };
 
             let second_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_start_pos.y};
             let third_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_end.y };
