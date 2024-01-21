@@ -83,7 +83,7 @@ impl TemplateApp {
             let start_point_widget = start_point_widget.unwrap();
             let end_point_widget = end_point_widget.unwrap();
 
-            let start_point = if start_point_widget.is_collapsed {
+            let start_point = if start_point_widget.is_collapsed || start_point_widget.mode == WidgetMode::Code {
                 Pos2 {
                     x: start_point_widget.position.x + start_point_widget.interactive_size.x,
                     y: start_point_widget.position.y + 16.0,
@@ -94,7 +94,7 @@ impl TemplateApp {
                     y: start_point_widget.position.y + 16.0,
                 }
             } else {
-                start_point_widget.runnable.get_entry_by_vertex(&current_link.start)
+                start_point_widget.runnable.outputs.get(current_link.start.entry_idx).unwrap().pos
             };
                           
             let end_point = if end_point_widget.is_collapsed || end_point_widget.mode == WidgetMode::Code {
@@ -103,7 +103,7 @@ impl TemplateApp {
                     y: end_point_widget.position.y + 16.0,
                 }
             } else {
-                end_point_widget.runnable.get_entry_by_vertex(&current_link.end)
+                end_point_widget.runnable.inputs.get(current_link.end.entry_idx).unwrap().pos
             };
 
             let second_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y};
@@ -203,30 +203,40 @@ impl eframe::App for TemplateApp {
 
             cancel_link_if_esc(&mut fw, ui);
 
-            create_link_if_clicked(&fw, ui, stroke);
+            create_unfinished_link_if_clicked(&fw, ui, stroke);
 
-            if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
-                if let Some(link_end) = fw.iter().rev().find(|widget| { widget.config.has_vertex.is_some() }) {
-                    if link_start_widget.config.runnable.name != link_end.config.runnable.name {
-                        self.links.push(Link { start: link_start_widget.config.has_vertex.clone().unwrap(), end: link_end.config.has_vertex.clone().unwrap(), should_be_deleted: false });
-
-                        if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
-                            link_start_widget.config.has_vertex.take();
-                        }
-            
-                        if let Some(link_end) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
-                            link_end.config.has_vertex.take();
-                        }
-                    }
-                } 
-            }
+            create_finished_links(&mut self.links, &mut fw);
 
             self.render_links(stroke, ui);
         });
     }
 }
 
-fn create_link_if_clicked(fw: &Vec<FunctionWidget<'_>>, ui: &mut egui::Ui, stroke: egui::Stroke) {
+fn create_finished_links(links: &mut Vec<Link>, fw: &mut Vec<FunctionWidget<'_>>) {
+    if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
+        if let Some(link_end_widget) = fw.iter().rev().find(|widget| { widget.config.has_vertex.is_some() }) {
+            if link_start_widget.config.runnable.name != link_end_widget.config.runnable.name {
+                let (link_start, link_end) = if link_start_widget.config.has_vertex.as_ref().unwrap().param_type == ParamType::Input {
+                    (link_end_widget.config.has_vertex.clone().unwrap(), link_start_widget.config.has_vertex.clone().unwrap())
+                } else {
+                    (link_start_widget.config.has_vertex.clone().unwrap(), link_end_widget.config.has_vertex.clone().unwrap())
+                };
+
+                links.push(Link { start: link_start, end: link_end, should_be_deleted: false });
+
+                if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
+                    link_start_widget.config.has_vertex.take();
+                }
+
+                if let Some(link_end) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
+                    link_end.config.has_vertex.take();
+                }
+            }
+        } 
+    }
+}
+
+fn create_unfinished_link_if_clicked(fw: &Vec<FunctionWidget<'_>>, ui: &mut egui::Ui, stroke: egui::Stroke) {
     if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
         if let Some(link_end) = ui.ctx().pointer_latest_pos() {
             let link_start = link_start_widget.config.has_vertex.clone().unwrap();
