@@ -65,15 +65,23 @@ impl TemplateApp {
 
     fn render_links(&mut self, stroke: egui::Stroke, ui: &mut egui::Ui) {
         self.links.retain(|link|{
-            self.rects.iter().find(|p| p.runnable.name == link.end.function_name).is_some() &&
-            self.rects.iter().find(|p| p.runnable.name == link.start.function_name).is_some() &&
             !link.should_be_deleted
         });
 
         for current_link in self.links.iter_mut() {
             let start_point_widget = self.rects.iter()
-                .find(|p| p.runnable.name == current_link.start.function_name)
-                .expect(format!("Non-connected link is found: function '{}' is not found", current_link.start.function_name).as_str());
+                .find(|p| p.runnable.name == current_link.start.function_name);
+
+            let end_point_widget = self.rects.iter()
+                .find(|p| p.runnable.name == current_link.end.function_name);
+            
+            if start_point_widget.is_none() || end_point_widget.is_none() {
+                current_link.should_be_deleted = true;
+                continue;
+            };
+
+            let start_point_widget = start_point_widget.unwrap();
+            let end_point_widget = end_point_widget.unwrap();
 
             let start_point = if start_point_widget.is_collapsed {
                 Pos2 {
@@ -88,10 +96,6 @@ impl TemplateApp {
             } else {
                 start_point_widget.runnable.get_entry_by_vertex(&current_link.start)
             };
-
-            let end_point_widget = self.rects.iter()
-                .find(|p| p.runnable.name == current_link.end.function_name)
-                .expect(format!("Non-connected link is found: function '{}' is not found", current_link.end.function_name).as_str());
                           
             let end_point = if end_point_widget.is_collapsed || end_point_widget.mode == WidgetMode::Code {
                 Pos2 {

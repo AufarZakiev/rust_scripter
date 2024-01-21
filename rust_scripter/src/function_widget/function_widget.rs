@@ -96,12 +96,13 @@ impl Runnable {
 #[derive(Serialize, Deserialize)]
 pub struct RenameOptions {
     pub rename_idx: usize, 
+    pub param_type: ParamType,
     pub new_name: String,
 }
 
 impl Default for RenameOptions {
     fn default() -> Self {
-        Self { rename_idx: Default::default(), new_name: Default::default() }
+        Self { rename_idx: Default::default(), param_type: ParamType::Input, new_name: Default::default() }
     }
 }
 
@@ -197,7 +198,18 @@ impl Widget for &mut FunctionWidget<'_> {
         });
 
         if let Some(ref rename_options) = self.config.entry_rename {
-            self.config.runnable.inputs.get_mut(rename_options.rename_idx).expect("TODO Eror").param_name = rename_options.new_name.clone();
+            if rename_options.param_type == ParamType::Input {
+                self.config.runnable.inputs.get_mut(rename_options.rename_idx)
+                    .expect(format!("Rename options are invalid: {}, {}", 
+                        rename_options.rename_idx, rename_options.new_name).as_str())
+                    .param_name = rename_options.new_name.clone();
+            } else {
+                self.config.runnable.outputs.get_mut(rename_options.rename_idx)
+                    .expect(format!("Rename options are invalid: {}, {}", 
+                        rename_options.rename_idx, rename_options.new_name).as_str())
+                    .param_name = rename_options.new_name.clone();
+            }
+            
         }
 
         self.config.runnable.outputs.retain(|output| {
@@ -245,7 +257,11 @@ impl Widget for &mut FunctionWidget<'_> {
                             columns[0].add(Label::new(input.param_name.clone()).sense(Sense::click())) 
                         } else {
                             if self.config.entry_rename.is_none() {
-                                self.config.entry_rename = Some(RenameOptions {rename_idx: idx, new_name: input.param_name.clone()});
+                                self.config.entry_rename = Some(RenameOptions {
+                                    rename_idx: idx, 
+                                    param_type: ParamType::Input,
+                                    new_name: input.param_name.clone()
+                                });
                             }
                             columns[0].add(TextEdit::singleline(&mut self.config.entry_rename.as_mut().expect("Entry rename was not inited").new_name))
                         };
@@ -345,7 +361,14 @@ impl Widget for &mut FunctionWidget<'_> {
                             if !output.is_editing { 
                                 ui.add(Label::new(output.param_name.clone()).sense(Sense::click())) 
                             } else {
-                                ui.add(TextEdit::singleline(&mut output.param_name.clone()))
+                                if self.config.entry_rename.is_none() {
+                                    self.config.entry_rename = Some(RenameOptions {
+                                        rename_idx: idx, 
+                                        param_type: ParamType::Output,
+                                        new_name: output.param_name.clone()
+                                    });
+                                } 
+                                ui.add(TextEdit::singleline(&mut self.config.entry_rename.as_mut().expect("Entry rename was not inited").new_name))
                             }
                         });
 
