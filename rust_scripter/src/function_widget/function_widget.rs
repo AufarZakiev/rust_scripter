@@ -406,7 +406,7 @@ impl Widget for &mut FunctionWidget<'_> {
                             }
                         }
 
-                        if label_response.inner.clicked() {
+                        if label_response.inner.clicked() && !output.is_editing {
                             self.config.has_vertex = Some(LinkVertex { 
                                 function_name: self.config.runnable.name.clone(), 
                                 param_type: ParamType::Output,
