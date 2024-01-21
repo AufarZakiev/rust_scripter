@@ -126,14 +126,14 @@ impl TemplateApp {
                         let curve = CubicBezierShape::from_points_stroke([
                             Pos2 { x: start_point.x, y: start_point.y + signum*150.0 }, 
                             Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y + signum*150.0 }, 
-                            Pos2 { x: (start_point.x + end_point.x)/2.0, y: end_point.y + signum*150.0 }, 
-                            Pos2 { x: end_point.x, y: end_point.y + signum*150.0 }
+                            Pos2 { x: (start_point.x + end_point.x)/2.0, y: end_point.y - signum*150.0 }, 
+                            Pos2 { x: end_point.x, y: end_point.y - signum*150.0 }
                         ], false, Default::default(), stroke);
                         ui.painter().add(curve);
                     }
                     {
-                        let start_point = Pos2 { x: end_point.x, y: end_point.y + signum*150.0 };
-                        let second_point = Pos2 { x: end_point.x - 150.0, y: end_point.y + signum*150.0 };
+                        let start_point = Pos2 { x: end_point.x, y: end_point.y - signum*150.0 };
+                        let second_point = Pos2 { x: end_point.x - 150.0, y: end_point.y - signum*150.0 };
                         let third_point = Pos2 { x: end_point.x - 150.0, y: end_point.y };
 
                         let points: [Pos2; 4] = [start_point, second_point, third_point, end_point];
@@ -143,30 +143,30 @@ impl TemplateApp {
                 }
                 diff if diff > 0.0 && diff < 100.0 => {
                     {
-                        let second_point = Pos2 { x: start_point.x + 150.0, y: start_point.y};
-                        let third_point = Pos2 { x: start_point.x + 150.0, y: (start_point.y + end_point.y)/2.0 };
-                        let end_point = Pos2 { x: start_point.x, y: (start_point.y + end_point.y)/2.0 };
+                        let second_point = Pos2 { x: start_point.x + 50.0, y: start_point.y};
+                        let third_point = Pos2 { x: start_point.x + 50.0, y: start_point.y + signum*50.0 };
+                        // let end_point = Pos2 { x: start_point.x, y: (start_point.y + end_point.y)/2.0 };
 
-                        let points: [Pos2; 4] = [start_point, second_point, third_point, end_point];
-                        let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+                        let points = [start_point, second_point, third_point];
+                        let curve = QuadraticBezierShape::from_points_stroke(points, false, Default::default(), stroke);
                         ui.painter().add(curve);
                     }
                     {
                         let curve = CubicBezierShape::from_points_stroke([
-                            Pos2 { x: start_point.x, y: (start_point.y + end_point.y)/2.0 }, 
-                            Pos2 { x: (start_point.x + end_point.x)/2.0, y: (start_point.y + end_point.y)/2.0 }, 
-                            Pos2 { x: (start_point.x + end_point.x)/2.0, y: (start_point.y + end_point.y)/2.0 }, 
-                            Pos2 { x: end_point.x, y: (start_point.y + end_point.y)/2.0 }
+                            Pos2 { x: start_point.x + 50.0, y: start_point.y + signum*50.0 },
+                            Pos2 { x: (start_point.x + 50.0 + end_point.x)/2.0, y: (start_point.y + end_point.y)/2.0 }, 
+                            Pos2 { x: (start_point.x - 50.0 + end_point.x)/2.0, y: (start_point.y + end_point.y)/2.0 }, 
+                            Pos2 { x: end_point.x - 50.0, y: end_point.y - signum*50.0}
                         ], false, Default::default(), stroke);
                         ui.painter().add(curve);
                     }
                     {
-                        let start_point = Pos2 { x: end_point.x, y: (start_point.y + end_point.y)/2.0 };
-                        let second_point = Pos2 { x: end_point.x - 150.0, y: end_point.y + signum*150.0};
-                        let third_point = Pos2 { x: end_point.x - 150.0, y: end_point.y };
+                        //let start_point = Pos2 { x: end_point.x, y: (start_point.y + end_point.y)/2.0 };
+                        let second_point = Pos2 { x: end_point.x - 50.0, y: end_point.y - signum*50.0};
+                        let third_point = Pos2 { x: end_point.x - 50.0, y: end_point.y };
 
-                        let points: [Pos2; 4] = [start_point, second_point, third_point, end_point];
-                        let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+                        let points = [second_point, third_point, end_point];
+                        let curve = QuadraticBezierShape::from_points_stroke(points, false, Default::default(), stroke);
                         ui.painter().add(curve);
                     }
                 }
