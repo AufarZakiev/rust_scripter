@@ -68,6 +68,8 @@ impl TemplateApp {
             !link.should_be_deleted
         });
 
+        let collapsed_window_width = 160.0;
+
         for current_link in self.links.iter_mut() {
             let start_point_widget = self.rects.iter()
                 .find(|p| p.runnable.name == current_link.start.function_name);
@@ -83,27 +85,28 @@ impl TemplateApp {
             let start_point_widget = start_point_widget.unwrap();
             let end_point_widget = end_point_widget.unwrap();
 
-            let start_point = if start_point_widget.is_collapsed || start_point_widget.mode == WidgetMode::Code {
-                Pos2 {
-                    x: start_point_widget.position.x + start_point_widget.interactive_size.x,
+            let start_point = match (start_point_widget.is_collapsed, &start_point_widget.mode) {
+                (true, _) => Pos2 {
+                    x: start_point_widget.position.x + collapsed_window_width,
                     y: start_point_widget.position.y + 16.0,
-                }
-            } else if start_point_widget.mode == WidgetMode::Code {
-                Pos2 {
-                    x: start_point_widget.position.x + if start_point_widget.mode == WidgetMode::Code { start_point_widget.code_size.x } else { start_point_widget.interactive_size.x },
+                },
+                (false, WidgetMode::Code) => Pos2 {
+                    x: start_point_widget.position.x + start_point_widget.code_size.x,
                     y: start_point_widget.position.y + 16.0,
-                }
-            } else {
-                start_point_widget.runnable.outputs.get(current_link.start.entry_idx).unwrap().pos
+                },
+                (false, WidgetMode::Signature) => start_point_widget.runnable.outputs.get(current_link.start.entry_idx).unwrap().pos,
             };
-                          
-            let end_point = if end_point_widget.is_collapsed || end_point_widget.mode == WidgetMode::Code {
-                Pos2 {
+
+            let end_point = match (end_point_widget.is_collapsed, &end_point_widget.mode) {
+                (true, _) => Pos2 {
                     x: end_point_widget.position.x,
                     y: end_point_widget.position.y + 16.0,
-                }
-            } else {
-                end_point_widget.runnable.inputs.get(current_link.end.entry_idx).unwrap().pos
+                },
+                (false, WidgetMode::Code) => Pos2 {
+                    x: end_point_widget.position.x,
+                    y: end_point_widget.position.y + 16.0,
+                },
+                (false, WidgetMode::Signature) => end_point_widget.runnable.inputs.get(current_link.end.entry_idx).unwrap().pos,
             };
 
             let second_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y};
