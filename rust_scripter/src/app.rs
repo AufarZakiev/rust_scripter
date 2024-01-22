@@ -1,9 +1,9 @@
 use egui::epaint::QuadraticBezierShape;
-use egui::{Pos2, Sense, epaint::CubicBezierShape, Key, Rect, Vec2, Label};
-use serde::{Serialize, Deserialize};
+use egui::{epaint::CubicBezierShape, Key, Label, Pos2, Rect, Sense, Vec2};
+use serde::{Deserialize, Serialize};
 
 use crate::function_widget::function_widget::{FunctionConfig, FunctionWidget, LinkVertex};
-use crate::function_widget::function_widget::{WidgetMode, ParamType};
+use crate::function_widget::function_widget::{ParamType, WidgetMode};
 
 #[derive(Deserialize, Serialize)]
 struct Link {
@@ -24,17 +24,26 @@ pub struct TemplateApp {
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
-            rects: vec![ 
+            rects: vec![
                 FunctionConfig::default(),
-                FunctionConfig::default_with_pos(Pos2 {x: 180.0, y: 40.0}, "Function #1".to_owned()),
+                FunctionConfig::default_with_pos(
+                    Pos2 { x: 180.0, y: 40.0 },
+                    "Function #1".to_owned(),
+                ),
             ],
-            links: vec![
-                Link { 
-                    start: LinkVertex { function_name: "Function #0".to_owned(), param_type: ParamType::Input, entry_idx: 0 },
-                    end: LinkVertex { function_name: "Function #1".to_owned(), param_type: ParamType::Output, entry_idx: 0 },
-                    should_be_deleted: false
-                }
-            ],
+            links: vec![Link {
+                start: LinkVertex {
+                    function_name: "Function #0".to_owned(),
+                    param_type: ParamType::Input,
+                    entry_idx: 0,
+                },
+                end: LinkVertex {
+                    function_name: "Function #1".to_owned(),
+                    param_type: ParamType::Output,
+                    entry_idx: 0,
+                },
+                should_be_deleted: false,
+            }],
             last_rect_id: 3,
         }
     }
@@ -55,9 +64,17 @@ impl TemplateApp {
         if let Some(storage) = cc.storage {
             if let Some(mut storage) = eframe::get_value::<TemplateApp>(storage, eframe::APP_KEY) {
                 if let Some(last_rect) = storage.rects.last() {
-                    storage.last_rect_id = last_rect.runnable.name.chars().last().unwrap().to_digit(10).unwrap() as usize + 1;
+                    storage.last_rect_id = last_rect
+                        .runnable
+                        .name
+                        .chars()
+                        .last()
+                        .unwrap()
+                        .to_digit(10)
+                        .unwrap() as usize
+                        + 1;
                     return storage;
-                }                
+                }
             }
         }
 
@@ -65,19 +82,21 @@ impl TemplateApp {
     }
 
     fn render_links(&mut self, stroke: egui::Stroke, ui: &mut egui::Ui) {
-        self.links.retain(|link|{
-            !link.should_be_deleted
-        });
+        self.links.retain(|link| !link.should_be_deleted);
 
         let collapsed_window_width = 160.0;
 
         for current_link in self.links.iter_mut() {
-            let start_point_widget = self.rects.iter()
+            let start_point_widget = self
+                .rects
+                .iter()
                 .find(|p| p.runnable.name == current_link.start.function_name);
 
-            let end_point_widget = self.rects.iter()
+            let end_point_widget = self
+                .rects
+                .iter()
                 .find(|p| p.runnable.name == current_link.end.function_name);
-            
+
             if start_point_widget.is_none() || end_point_widget.is_none() {
                 current_link.should_be_deleted = true;
                 continue;
@@ -95,7 +114,14 @@ impl TemplateApp {
                     x: start_point_widget.position.x + start_point_widget.code_size.x,
                     y: start_point_widget.position.y + 16.0,
                 },
-                (false, WidgetMode::Signature) => start_point_widget.runnable.outputs.get(current_link.start.entry_idx).unwrap().pos,
+                (false, WidgetMode::Signature) => {
+                    start_point_widget
+                        .runnable
+                        .outputs
+                        .get(current_link.start.entry_idx)
+                        .unwrap()
+                        .pos
+                }
             };
 
             let end_point = match (end_point_widget.is_collapsed, &end_point_widget.mode) {
@@ -107,97 +133,203 @@ impl TemplateApp {
                     x: end_point_widget.position.x,
                     y: end_point_widget.position.y + 16.0,
                 },
-                (false, WidgetMode::Signature) => end_point_widget.runnable.inputs.get(current_link.end.entry_idx).unwrap().pos,
+                (false, WidgetMode::Signature) => {
+                    end_point_widget
+                        .runnable
+                        .inputs
+                        .get(current_link.end.entry_idx)
+                        .unwrap()
+                        .pos
+                }
             };
 
             let signum = (end_point.y - start_point.y).signum();
             match end_point.x - start_point.x {
                 diff if diff <= 0.0 => {
                     {
-                        let second_point = Pos2 { x: start_point.x + 150.0, y: start_point.y};
-                        let third_point = Pos2 { x: start_point.x + 150.0, y: start_point.y + signum*150.0 };
-                        let end_point = Pos2 { x: start_point.x, y: start_point.y + signum*150.0 };
+                        let second_point = Pos2 {
+                            x: start_point.x + 150.0,
+                            y: start_point.y,
+                        };
+                        let third_point = Pos2 {
+                            x: start_point.x + 150.0,
+                            y: start_point.y + signum * 150.0,
+                        };
+                        let end_point = Pos2 {
+                            x: start_point.x,
+                            y: start_point.y + signum * 150.0,
+                        };
 
                         let points: [Pos2; 4] = [start_point, second_point, third_point, end_point];
-                        let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+                        let curve = CubicBezierShape::from_points_stroke(
+                            points,
+                            false,
+                            Default::default(),
+                            stroke,
+                        );
                         ui.painter().add(curve);
                     }
                     {
-                        let curve = CubicBezierShape::from_points_stroke([
-                            Pos2 { x: start_point.x, y: start_point.y + signum*150.0 }, 
-                            Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y + signum*150.0 }, 
-                            Pos2 { x: (start_point.x + end_point.x)/2.0, y: end_point.y - signum*150.0 }, 
-                            Pos2 { x: end_point.x, y: end_point.y - signum*150.0 }
-                        ], false, Default::default(), stroke);
+                        let curve = CubicBezierShape::from_points_stroke(
+                            [
+                                Pos2 {
+                                    x: start_point.x,
+                                    y: start_point.y + signum * 150.0,
+                                },
+                                Pos2 {
+                                    x: (start_point.x + end_point.x) / 2.0,
+                                    y: start_point.y + signum * 150.0,
+                                },
+                                Pos2 {
+                                    x: (start_point.x + end_point.x) / 2.0,
+                                    y: end_point.y - signum * 150.0,
+                                },
+                                Pos2 {
+                                    x: end_point.x,
+                                    y: end_point.y - signum * 150.0,
+                                },
+                            ],
+                            false,
+                            Default::default(),
+                            stroke,
+                        );
                         ui.painter().add(curve);
                     }
                     {
-                        let start_point = Pos2 { x: end_point.x, y: end_point.y - signum*150.0 };
-                        let second_point = Pos2 { x: end_point.x - 150.0, y: end_point.y - signum*150.0 };
-                        let third_point = Pos2 { x: end_point.x - 150.0, y: end_point.y };
+                        let start_point = Pos2 {
+                            x: end_point.x,
+                            y: end_point.y - signum * 150.0,
+                        };
+                        let second_point = Pos2 {
+                            x: end_point.x - 150.0,
+                            y: end_point.y - signum * 150.0,
+                        };
+                        let third_point = Pos2 {
+                            x: end_point.x - 150.0,
+                            y: end_point.y,
+                        };
 
                         let points: [Pos2; 4] = [start_point, second_point, third_point, end_point];
-                        let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+                        let curve = CubicBezierShape::from_points_stroke(
+                            points,
+                            false,
+                            Default::default(),
+                            stroke,
+                        );
                         ui.painter().add(curve);
                     }
                 }
                 diff if diff > 0.0 && diff < 100.0 => {
                     {
-                        let second_point = Pos2 { x: start_point.x + 50.0, y: start_point.y};
-                        let third_point = Pos2 { x: start_point.x + 50.0, y: start_point.y + signum*50.0 };
+                        let second_point = Pos2 {
+                            x: start_point.x + 50.0,
+                            y: start_point.y,
+                        };
+                        let third_point = Pos2 {
+                            x: start_point.x + 50.0,
+                            y: start_point.y + signum * 50.0,
+                        };
                         // let end_point = Pos2 { x: start_point.x, y: (start_point.y + end_point.y)/2.0 };
 
                         let points = [start_point, second_point, third_point];
-                        let curve = QuadraticBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+                        let curve = QuadraticBezierShape::from_points_stroke(
+                            points,
+                            false,
+                            Default::default(),
+                            stroke,
+                        );
                         ui.painter().add(curve);
                     }
                     {
-                        let curve = CubicBezierShape::from_points_stroke([
-                            Pos2 { x: start_point.x + 50.0, y: start_point.y + signum*50.0 },
-                            Pos2 { x: (start_point.x + 50.0 + end_point.x)/2.0, y: (start_point.y + end_point.y)/2.0 }, 
-                            Pos2 { x: (start_point.x - 50.0 + end_point.x)/2.0, y: (start_point.y + end_point.y)/2.0 }, 
-                            Pos2 { x: end_point.x - 50.0, y: end_point.y - signum*50.0}
-                        ], false, Default::default(), stroke);
+                        let curve = CubicBezierShape::from_points_stroke(
+                            [
+                                Pos2 {
+                                    x: start_point.x + 50.0,
+                                    y: start_point.y + signum * 50.0,
+                                },
+                                Pos2 {
+                                    x: (start_point.x + 50.0 + end_point.x) / 2.0,
+                                    y: (start_point.y + end_point.y) / 2.0,
+                                },
+                                Pos2 {
+                                    x: (start_point.x - 50.0 + end_point.x) / 2.0,
+                                    y: (start_point.y + end_point.y) / 2.0,
+                                },
+                                Pos2 {
+                                    x: end_point.x - 50.0,
+                                    y: end_point.y - signum * 50.0,
+                                },
+                            ],
+                            false,
+                            Default::default(),
+                            stroke,
+                        );
                         ui.painter().add(curve);
                     }
                     {
                         //let start_point = Pos2 { x: end_point.x, y: (start_point.y + end_point.y)/2.0 };
-                        let second_point = Pos2 { x: end_point.x - 50.0, y: end_point.y - signum*50.0};
-                        let third_point = Pos2 { x: end_point.x - 50.0, y: end_point.y };
+                        let second_point = Pos2 {
+                            x: end_point.x - 50.0,
+                            y: end_point.y - signum * 50.0,
+                        };
+                        let third_point = Pos2 {
+                            x: end_point.x - 50.0,
+                            y: end_point.y,
+                        };
 
                         let points = [second_point, third_point, end_point];
-                        let curve = QuadraticBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+                        let curve = QuadraticBezierShape::from_points_stroke(
+                            points,
+                            false,
+                            Default::default(),
+                            stroke,
+                        );
                         ui.painter().add(curve);
                     }
                 }
                 _ => {
-                    let second_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: start_point.y};
-                    let third_point = Pos2 { x: (start_point.x + end_point.x)/2.0, y: end_point.y };
+                    let second_point = Pos2 {
+                        x: (start_point.x + end_point.x) / 2.0,
+                        y: start_point.y,
+                    };
+                    let third_point = Pos2 {
+                        x: (start_point.x + end_point.x) / 2.0,
+                        y: end_point.y,
+                    };
 
                     let points: [Pos2; 4] = [start_point, second_point, third_point, end_point];
-                    let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+                    let curve = CubicBezierShape::from_points_stroke(
+                        points,
+                        false,
+                        Default::default(),
+                        stroke,
+                    );
                     ui.painter().add(curve);
                 }
             }
-            
+
             if let Some(cursor_pos) = ui.ctx().pointer_latest_pos() {
-                let delete_icon_point = Pos2 {x: (start_point.x + end_point.x)/2.0, y: (start_point.y + end_point.y) / 2.0};
+                let delete_icon_point = Pos2 {
+                    x: (start_point.x + end_point.x) / 2.0,
+                    y: (start_point.y + end_point.y) / 2.0,
+                };
                 let delete_icon_rect = Rect {
-                    min: delete_icon_point - Vec2{x: 30.0, y: 30.0},
-                    max: delete_icon_point + Vec2{x: 30.0, y: 30.0},
+                    min: delete_icon_point - Vec2 { x: 30.0, y: 30.0 },
+                    max: delete_icon_point + Vec2 { x: 30.0, y: 30.0 },
                 };
 
                 if delete_icon_rect.contains(cursor_pos) {
                     let delete_icon_response = ui.allocate_ui_at_rect(delete_icon_rect, |ui| {
                         let delete_icon = Label::new("❌").sense(Sense::click());
-                        ui.with_layout(egui::Layout::centered_and_justified(egui::Direction::TopDown), |ui| {
-                            ui.add(delete_icon)
-                        })
+                        ui.with_layout(
+                            egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                            |ui| ui.add(delete_icon),
+                        )
                     });
                     if delete_icon_response.inner.inner.clicked() {
-                        current_link.should_be_deleted = true;   
-                    }  
-                }        
+                        current_link.should_be_deleted = true;
+                    }
+                }
             }
         }
     }
@@ -214,7 +346,7 @@ impl eframe::App for TemplateApp {
         // Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
-        self.rects.retain(|ele| {ele.is_open});
+        self.rects.retain(|ele| ele.is_open);
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
@@ -235,22 +367,22 @@ impl eframe::App for TemplateApp {
         });
 
         egui::SidePanel::left("Toolbox").show(ctx, |ui| {
-            let icon = 
-                egui::Button::image_and_text(egui::include_image!("../assets/function-icon.png"), "Add function")
-                .rounding(5.0);
+            let icon = egui::Button::image_and_text(
+                egui::include_image!("../assets/function-icon.png"),
+                "Add function",
+            )
+            .rounding(5.0);
             let icon_response = ui.add(icon);
             if icon_response.clicked() {
                 self.rects.push(FunctionConfig::default_with_pos(
-                    Pos2 { x: 0.0, y: 0.0 }, 
-                    format!("Function #{}", self.last_rect_id)
+                    Pos2 { x: 0.0, y: 0.0 },
+                    format!("Function #{}", self.last_rect_id),
                 ));
                 self.last_rect_id += 1;
             }
         });
 
-        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
-            powered_by_egui_and_eframe(ui)
-        });
+        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| powered_by_egui_and_eframe(ui));
 
         egui::CentralPanel::default().show(ctx, |ui| {
             let stroke = ui.visuals().widgets.hovered.bg_stroke;
@@ -279,51 +411,95 @@ impl eframe::App for TemplateApp {
 }
 
 fn create_finished_links(links: &mut Vec<Link>, fw: &mut Vec<FunctionWidget<'_>>) {
-    if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
-        if let Some(link_end_widget) = fw.iter().rev().find(|widget| { widget.config.has_vertex.is_some() }) {
+    if let Some(link_start_widget) = fw.iter().find(|widget| widget.config.has_vertex.is_some()) {
+        if let Some(link_end_widget) = fw
+            .iter()
+            .rev()
+            .find(|widget| widget.config.has_vertex.is_some())
+        {
             if link_start_widget.config.runnable.name != link_end_widget.config.runnable.name {
-                let (link_start, link_end) = if link_start_widget.config.has_vertex.as_ref().unwrap().param_type == ParamType::Input {
-                    (link_end_widget.config.has_vertex.clone().unwrap(), link_start_widget.config.has_vertex.clone().unwrap())
+                let (link_start, link_end) = if link_start_widget
+                    .config
+                    .has_vertex
+                    .as_ref()
+                    .unwrap()
+                    .param_type
+                    == ParamType::Input
+                {
+                    (
+                        link_end_widget.config.has_vertex.clone().unwrap(),
+                        link_start_widget.config.has_vertex.clone().unwrap(),
+                    )
                 } else {
-                    (link_start_widget.config.has_vertex.clone().unwrap(), link_end_widget.config.has_vertex.clone().unwrap())
+                    (
+                        link_start_widget.config.has_vertex.clone().unwrap(),
+                        link_end_widget.config.has_vertex.clone().unwrap(),
+                    )
                 };
 
-                links.push(Link { start: link_start, end: link_end, should_be_deleted: false });
+                links.push(Link {
+                    start: link_start,
+                    end: link_end,
+                    should_be_deleted: false,
+                });
 
-                if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
+                if let Some(link_start_widget) = fw
+                    .iter_mut()
+                    .find(|widget| widget.config.has_vertex.is_some())
+                {
                     link_start_widget.config.has_vertex.take();
                 }
 
-                if let Some(link_end) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
+                if let Some(link_end) = fw
+                    .iter_mut()
+                    .find(|widget| widget.config.has_vertex.is_some())
+                {
                     link_end.config.has_vertex.take();
                 }
             }
-        } 
+        }
     }
 }
 
-fn create_unfinished_link_if_clicked(fw: &Vec<FunctionWidget<'_>>, ui: &mut egui::Ui, stroke: egui::Stroke) {
-    if let Some(link_start_widget) = fw.iter().find(|widget| { widget.config.has_vertex.is_some() }) {
+fn create_unfinished_link_if_clicked(
+    fw: &Vec<FunctionWidget<'_>>,
+    ui: &mut egui::Ui,
+    stroke: egui::Stroke,
+) {
+    if let Some(link_start_widget) = fw.iter().find(|widget| widget.config.has_vertex.is_some()) {
         if let Some(link_end) = ui.ctx().pointer_latest_pos() {
             let link_start = link_start_widget.config.has_vertex.clone().unwrap();
-            let link_start_pos = link_start_widget.config.runnable.get_entry_by_vertex(&link_start);
+            let link_start_pos = link_start_widget
+                .config
+                .runnable
+                .get_entry_by_vertex(&link_start);
 
-            let second_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_start_pos.y};
-            let third_point = Pos2 { x: (link_start_pos.x + link_end.x)/2.0, y: link_end.y };
-    
+            let second_point = Pos2 {
+                x: (link_start_pos.x + link_end.x) / 2.0,
+                y: link_start_pos.y,
+            };
+            let third_point = Pos2 {
+                x: (link_start_pos.x + link_end.x) / 2.0,
+                y: link_end.y,
+            };
+
             let points: [Pos2; 4] = [link_start_pos, second_point, third_point, link_end];
-            let curve = CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
-        
+            let curve =
+                CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+
             ui.painter().add(curve);
         }
     }
 }
 
 fn cancel_link_if_esc(fw: &mut Vec<FunctionWidget<'_>>, ui: &mut egui::Ui) {
-    if let Some(link_start_widget) = fw.iter_mut().find(|widget| { widget.config.has_vertex.is_some() }) {
-        ui.input(|i| { 
+    if let Some(link_start_widget) = fw
+        .iter_mut()
+        .find(|widget| widget.config.has_vertex.is_some())
+    {
+        ui.input(|i| {
             if i.key_pressed(Key::Escape) {
-                link_start_widget.config.has_vertex.take();                    
+                link_start_widget.config.has_vertex.take();
             }
         });
     }
