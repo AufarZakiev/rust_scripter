@@ -15,7 +15,7 @@ pub enum ParamType {
 pub struct LinkVertex {
     pub function_name: String,
     pub param_type: ParamType,
-    pub entry_idx: usize,
+    pub param_name: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -88,9 +88,17 @@ val"#
 impl Runnable {
     pub fn get_entry_by_vertex(&self, vertex: &LinkVertex) -> Pos2 {
         if vertex.param_type == ParamType::Input {
-            self.inputs.get(vertex.entry_idx).unwrap().pos
+            self.inputs
+                .iter()
+                .find(|out| out.param_name == vertex.param_name)
+                .unwrap()
+                .pos
         } else {
-            self.outputs.get(vertex.entry_idx).unwrap().pos
+            self.outputs
+                .iter()
+                .find(|out| out.param_name == vertex.param_name)
+                .unwrap()
+                .pos
         }
     }
 }
@@ -318,7 +326,7 @@ impl Widget for &mut FunctionWidget<'_> {
                                 self.config.has_vertex = Some(LinkVertex {
                                     function_name: self.config.runnable.name.clone(),
                                     param_type: ParamType::Input,
-                                    entry_idx: idx,
+                                    param_name: input.param_name.clone(),
                                 });
                             }
 
@@ -481,7 +489,7 @@ impl Widget for &mut FunctionWidget<'_> {
                                 self.config.has_vertex = Some(LinkVertex {
                                     function_name: self.config.runnable.name.clone(),
                                     param_type: ParamType::Output,
-                                    entry_idx: idx,
+                                    param_name: output.param_name.clone(),
                                 });
                             }
 

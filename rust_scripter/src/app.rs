@@ -35,12 +35,12 @@ impl Default for TemplateApp {
                 start: LinkVertex {
                     function_name: "Function #0".to_owned(),
                     param_type: ParamType::Input,
-                    entry_idx: 0,
+                    param_name: "Output1".to_owned(),
                 },
                 end: LinkVertex {
                     function_name: "Function #1".to_owned(),
                     param_type: ParamType::Output,
-                    entry_idx: 0,
+                    param_name: "Input1".to_owned(),
                 },
                 should_be_deleted: false,
             }],
@@ -105,6 +105,23 @@ impl TemplateApp {
             let start_point_widget = start_point_widget.unwrap();
             let end_point_widget = end_point_widget.unwrap();
 
+            let start_param = start_point_widget
+                .runnable
+                .outputs
+                .iter()
+                .find(|out| out.param_name == current_link.start.param_name);
+
+            let end_param = end_point_widget
+                .runnable
+                .inputs
+                .iter()
+                .find(|out| out.param_name == current_link.end.param_name);
+
+            if start_param.is_none() || end_param.is_none() {
+                current_link.should_be_deleted = true;
+                continue;
+            };
+
             let start_point = match (start_point_widget.is_collapsed, &start_point_widget.mode) {
                 (true, _) => Pos2 {
                     x: start_point_widget.position.x + collapsed_window_width,
@@ -114,14 +131,7 @@ impl TemplateApp {
                     x: start_point_widget.position.x + start_point_widget.code_size.x,
                     y: start_point_widget.position.y + 16.0,
                 },
-                (false, WidgetMode::Signature) => {
-                    start_point_widget
-                        .runnable
-                        .outputs
-                        .get(current_link.start.entry_idx)
-                        .unwrap()
-                        .pos
-                }
+                (false, WidgetMode::Signature) => start_param.unwrap().pos,
             };
 
             let end_point = match (end_point_widget.is_collapsed, &end_point_widget.mode) {
@@ -133,14 +143,7 @@ impl TemplateApp {
                     x: end_point_widget.position.x,
                     y: end_point_widget.position.y + 16.0,
                 },
-                (false, WidgetMode::Signature) => {
-                    end_point_widget
-                        .runnable
-                        .inputs
-                        .get(current_link.end.entry_idx)
-                        .unwrap()
-                        .pos
-                }
+                (false, WidgetMode::Signature) => end_param.unwrap().pos,
             };
 
             let signum = (end_point.y - start_point.y).signum();
