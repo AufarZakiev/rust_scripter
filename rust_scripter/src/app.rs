@@ -2,7 +2,7 @@ use egui::epaint::QuadraticBezierShape;
 use egui::{epaint::CubicBezierShape, Key, Label, Pos2, Rect, Sense, Vec2};
 use serde::{Deserialize, Serialize};
 
-use crate::function_widget::function_widget::{FunctionConfig, FunctionWidget, LinkVertex};
+use crate::function_widget::function_widget::{FunctionWidget, LinkVertex};
 use crate::function_widget::function_widget::{ParamType, WidgetMode};
 
 #[derive(Deserialize, Serialize)]
@@ -16,7 +16,7 @@ struct Link {
 #[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
-    rects: Vec<FunctionConfig>,
+    functions: Vec<FunctionWidget>,
     links: Vec<Link>,
     last_rect_id: usize,
 }
@@ -24,9 +24,9 @@ pub struct TemplateApp {
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
-            rects: vec![
-                FunctionConfig::default(),
-                FunctionConfig::default_with_pos(
+            functions: vec![
+                FunctionWidget::default(),
+                FunctionWidget::default_with_pos(
                     Pos2 { x: 180.0, y: 40.0 },
                     "Function #1".to_owned(),
                 ),
@@ -63,7 +63,7 @@ impl TemplateApp {
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
             if let Some(mut storage) = eframe::get_value::<TemplateApp>(storage, eframe::APP_KEY) {
-                if let Some(last_rect) = storage.rects.last() {
+                if let Some(last_rect) = storage.functions.last() {
                     storage.last_rect_id = last_rect
                         .runnable
                         .name
@@ -88,12 +88,12 @@ impl TemplateApp {
 
         for current_link in self.links.iter_mut() {
             let start_point_widget = self
-                .rects
+                .functions
                 .iter()
                 .find(|p| p.runnable.name == current_link.start.function_name);
 
             let end_point_widget = self
-                .rects
+                .functions
                 .iter()
                 .find(|p| p.runnable.name == current_link.end.function_name);
 
@@ -349,7 +349,7 @@ impl eframe::App for TemplateApp {
         // Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
-        self.rects.retain(|ele| ele.is_open);
+        self.functions.retain(|ele| ele.is_open);
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
@@ -377,7 +377,7 @@ impl eframe::App for TemplateApp {
             .rounding(5.0);
             let icon_response = ui.add(icon);
             if icon_response.clicked() {
-                self.rects.push(FunctionConfig::default_with_pos(
+                self.functions.push(FunctionWidget::default_with_pos(
                     Pos2 { x: 0.0, y: 0.0 },
                     format!("Function #{}", self.last_rect_id),
                 ));
@@ -390,39 +390,26 @@ impl eframe::App for TemplateApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
-            let mut fw = vec![];
-            for ele in self.rects.iter_mut() {
-                let function_widget = FunctionWidget::new(ele);
-                fw.push(function_widget);
+            for ele in self.functions.iter_mut() {
+                ui.add(ele);
             }
 
-            ui.horizontal(|ui| {
-                for ele in fw.iter_mut() {
-                    ui.add(ele);
-                }
-            });
+            cancel_link_if_esc(&mut self.functions, ui);
 
-            cancel_link_if_esc(&mut fw, ui);
+            create_unfinished_link_if_clicked(&self.functions, ui, stroke);
 
-            create_unfinished_link_if_clicked(&fw, ui, stroke);
-
-            create_finished_links(&mut self.links, &mut fw);
+            create_finished_links(&mut self.links, &mut self.functions);
 
             self.render_links(stroke, ui);
         });
     }
 }
 
-fn create_finished_links(links: &mut Vec<Link>, fw: &mut Vec<FunctionWidget<'_>>) {
-    if let Some(link_start_widget) = fw.iter().find(|widget| widget.config.has_vertex.is_some()) {
-        if let Some(link_end_widget) = fw
-            .iter()
-            .rev()
-            .find(|widget| widget.config.has_vertex.is_some())
-        {
-            if link_start_widget.config.runnable.name != link_end_widget.config.runnable.name {
+fn create_finished_links(links: &mut Vec<Link>, fw: &mut Vec<FunctionWidget>) {
+    if let Some(link_start_widget) = fw.iter().find(|widget| widget.has_vertex.is_some()) {
+        if let Some(link_end_widget) = fw.iter().rev().find(|widget| widget.has_vertex.is_some()) {
+            if link_start_widget.runnable.name != link_end_widget.runnable.name {
                 let (link_start, link_end) = if link_start_widget
-                    .config
                     .has_vertex
                     .as_ref()
                     .unwrap()
@@ -430,13 +417,13 @@ fn create_finished_links(links: &mut Vec<Link>, fw: &mut Vec<FunctionWidget<'_>>
                     == ParamType::Input
                 {
                     (
-                        link_end_widget.config.has_vertex.clone().unwrap(),
-                        link_start_widget.config.has_vertex.clone().unwrap(),
+                        link_end_widget.has_vertex.clone().unwrap(),
+                        link_start_widget.has_vertex.clone().unwrap(),
                     )
                 } else {
                     (
-                        link_start_widget.config.has_vertex.clone().unwrap(),
-                        link_end_widget.config.has_vertex.clone().unwrap(),
+                        link_start_widget.has_vertex.clone().unwrap(),
+                        link_end_widget.has_vertex.clone().unwrap(),
                     )
                 };
 
@@ -446,18 +433,14 @@ fn create_finished_links(links: &mut Vec<Link>, fw: &mut Vec<FunctionWidget<'_>>
                     should_be_deleted: false,
                 });
 
-                if let Some(link_start_widget) = fw
-                    .iter_mut()
-                    .find(|widget| widget.config.has_vertex.is_some())
+                if let Some(link_start_widget) =
+                    fw.iter_mut().find(|widget| widget.has_vertex.is_some())
                 {
-                    link_start_widget.config.has_vertex.take();
+                    link_start_widget.has_vertex.take();
                 }
 
-                if let Some(link_end) = fw
-                    .iter_mut()
-                    .find(|widget| widget.config.has_vertex.is_some())
-                {
-                    link_end.config.has_vertex.take();
+                if let Some(link_end) = fw.iter_mut().find(|widget| widget.has_vertex.is_some()) {
+                    link_end.has_vertex.take();
                 }
             }
         }
@@ -465,17 +448,14 @@ fn create_finished_links(links: &mut Vec<Link>, fw: &mut Vec<FunctionWidget<'_>>
 }
 
 fn create_unfinished_link_if_clicked(
-    fw: &Vec<FunctionWidget<'_>>,
+    fw: &Vec<FunctionWidget>,
     ui: &mut egui::Ui,
     stroke: egui::Stroke,
 ) {
-    if let Some(link_start_widget) = fw.iter().find(|widget| widget.config.has_vertex.is_some()) {
+    if let Some(link_start_widget) = fw.iter().find(|widget| widget.has_vertex.is_some()) {
         if let Some(link_end) = ui.ctx().pointer_latest_pos() {
-            let link_start = link_start_widget.config.has_vertex.clone().unwrap();
-            let link_start_pos = link_start_widget
-                .config
-                .runnable
-                .get_entry_by_vertex(&link_start);
+            let link_start = link_start_widget.has_vertex.clone().unwrap();
+            let link_start_pos = link_start_widget.runnable.get_entry_by_vertex(&link_start);
 
             let second_point = Pos2 {
                 x: (link_start_pos.x + link_end.x) / 2.0,
@@ -495,14 +475,11 @@ fn create_unfinished_link_if_clicked(
     }
 }
 
-fn cancel_link_if_esc(fw: &mut Vec<FunctionWidget<'_>>, ui: &mut egui::Ui) {
-    if let Some(link_start_widget) = fw
-        .iter_mut()
-        .find(|widget| widget.config.has_vertex.is_some())
-    {
+fn cancel_link_if_esc(fw: &mut Vec<FunctionWidget>, ui: &mut egui::Ui) {
+    if let Some(link_start_widget) = fw.iter_mut().find(|widget| widget.has_vertex.is_some()) {
         ui.input(|i| {
             if i.key_pressed(Key::Escape) {
-                link_start_widget.config.has_vertex.take();
+                link_start_widget.has_vertex.take();
             }
         });
     }

@@ -120,8 +120,15 @@ impl Default for RenameOptions {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct FunctionConfig {
+#[derive(PartialEq, Deserialize, Serialize)]
+pub enum WidgetMode {
+    Code,
+    Signature,
+}
+
+#[derive(Deserialize, Serialize)]
+#[must_use = "You should put this widget in an ui with `ui.add(widget);`"]
+pub struct FunctionWidget {
     // Actual code of function
     pub runnable: Runnable,
     // Visual state
@@ -139,23 +146,17 @@ pub struct FunctionConfig {
     pub engine: rhai::Engine,
 }
 
-impl Default for FunctionConfig {
-    fn default() -> FunctionConfig {
+impl Default for FunctionWidget {
+    fn default() -> FunctionWidget {
         let default_runnable = Runnable::default();
 
-        FunctionConfig::new(default_runnable, Pos2 { x: 120.0, y: 40.0 }, true, true)
+        FunctionWidget::new(default_runnable, Pos2 { x: 120.0, y: 40.0 }, true, true)
     }
 }
 
-#[derive(PartialEq, Deserialize, Serialize)]
-pub enum WidgetMode {
-    Code,
-    Signature,
-}
-
-impl FunctionConfig {
+impl FunctionWidget {
     pub fn default_with_pos(initial_pos: Pos2, name: String) -> Self {
-        let mut def = FunctionConfig::default();
+        let mut def = FunctionWidget::default();
         def.runnable.name = name;
         def.position = initial_pos;
         def
@@ -177,38 +178,25 @@ impl FunctionConfig {
     }
 }
 
-#[must_use = "You should put this widget in an ui with `ui.add(widget);`"]
-pub struct FunctionWidget<'a> {
-    pub config: &'a mut FunctionConfig,
-}
-
-impl<'a> FunctionWidget<'a> {
-    pub fn new(config: &'a mut FunctionConfig) -> Self {
-        Self { config }
-    }
-}
-
-impl Widget for &mut FunctionWidget<'_> {
+impl Widget for &mut FunctionWidget {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        let mut window = Window::new(&self.config.runnable.name)
-            .open(&mut self.config.is_open)
+        let mut window = Window::new(&self.runnable.name)
+            .open(&mut self.is_open)
             .collapsible(true);
 
-        if self.config.mode == WidgetMode::Signature {
-            window = window.fixed_size(self.config.interactive_size);
+        if self.mode == WidgetMode::Signature {
+            window = window.fixed_size(self.interactive_size);
         } else {
-            window = window.fixed_size(self.config.code_size);
+            window = window.fixed_size(self.code_size);
         }
 
-        self.config
-            .runnable
+        self.runnable
             .inputs
             .retain(|input| !input.should_be_deleted);
 
-        if let Some(ref rename_options) = self.config.entry_rename {
+        if let Some(ref rename_options) = self.entry_rename {
             if rename_options.param_type == ParamType::Input {
-                self.config
-                    .runnable
+                self.runnable
                     .inputs
                     .get_mut(rename_options.rename_idx)
                     .expect(
@@ -220,8 +208,7 @@ impl Widget for &mut FunctionWidget<'_> {
                     )
                     .param_name = rename_options.new_name.clone();
             } else {
-                self.config
-                    .runnable
+                self.runnable
                     .outputs
                     .get_mut(rename_options.rename_idx)
                     .expect(
@@ -235,8 +222,7 @@ impl Widget for &mut FunctionWidget<'_> {
             }
         }
 
-        self.config
-            .runnable
+        self.runnable
             .outputs
             .retain(|output| !output.should_be_deleted);
 
@@ -247,11 +233,11 @@ impl Widget for &mut FunctionWidget<'_> {
         let window_response = window
             .show(ui.ctx(), |ui| {
                 ui.horizontal(|ui| {
-                    ui.selectable_value(&mut self.config.mode, WidgetMode::Signature, "Signature");
-                    ui.selectable_value(&mut self.config.mode, WidgetMode::Code, "Code");
+                    ui.selectable_value(&mut self.mode, WidgetMode::Signature, "Signature");
+                    ui.selectable_value(&mut self.mode, WidgetMode::Code, "Code");
                 });
 
-                if self.config.mode == WidgetMode::Code {
+                if self.mode == WidgetMode::Code {
                     let language = "rs";
                     let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
 
@@ -268,7 +254,7 @@ impl Widget for &mut FunctionWidget<'_> {
                     };
 
                     ui.add(
-                        egui::TextEdit::multiline(&mut self.config.runnable.code)
+                        egui::TextEdit::multiline(&mut self.runnable.code)
                             .font(egui::TextStyle::Monospace) // for cursor height
                             .code_editor()
                             .desired_rows(10)
@@ -279,13 +265,13 @@ impl Widget for &mut FunctionWidget<'_> {
                 } else {
                     let painter = ui.ctx().layer_painter(LayerId::new(
                         Order::Foreground,
-                        Id::new(self.config.runnable.name.clone()),
+                        Id::new(self.runnable.name.clone()),
                     ));
 
                     let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
                     ui.columns(3, |columns| {
-                        for (idx, input) in self.config.runnable.inputs.iter_mut().enumerate() {
+                        for (idx, input) in self.runnable.inputs.iter_mut().enumerate() {
                             let label_response = if !input.is_editing {
                                 columns[0].add(
                                     Label::new(input.param_name.clone())
@@ -293,8 +279,8 @@ impl Widget for &mut FunctionWidget<'_> {
                                         .wrap(true),
                                 )
                             } else {
-                                if self.config.entry_rename.is_none() {
-                                    self.config.entry_rename = Some(RenameOptions {
+                                if self.entry_rename.is_none() {
+                                    self.entry_rename = Some(RenameOptions {
                                         rename_idx: idx,
                                         param_type: ParamType::Input,
                                         new_name: input.param_name.clone(),
@@ -302,7 +288,6 @@ impl Widget for &mut FunctionWidget<'_> {
                                 }
                                 columns[0].add(TextEdit::singleline(
                                     &mut self
-                                        .config
                                         .entry_rename
                                         .as_mut()
                                         .expect("Entry rename was not inited")
@@ -323,8 +308,8 @@ impl Widget for &mut FunctionWidget<'_> {
                             input.pos = circle_rect.center();
 
                             if label_response.clicked() && !input.is_editing {
-                                self.config.has_vertex = Some(LinkVertex {
-                                    function_name: self.config.runnable.name.clone(),
+                                self.has_vertex = Some(LinkVertex {
+                                    function_name: self.runnable.name.clone(),
                                     param_type: ParamType::Input,
                                     param_name: input.param_name.clone(),
                                 });
@@ -341,19 +326,19 @@ impl Widget for &mut FunctionWidget<'_> {
 
                             if label_response.double_clicked() {
                                 input.is_editing = true;
-                                self.config.has_vertex = None;
+                                self.has_vertex = None;
                             }
 
                             if label_response.clicked_elsewhere() {
                                 input.is_editing = false;
-                                self.config.entry_rename = None;
+                                self.entry_rename = None;
                             }
 
                             if input.is_editing {
                                 columns[0].input(|i| {
                                     if i.key_pressed(Key::Escape) {
                                         input.is_editing = false;
-                                        self.config.entry_rename = None;
+                                        self.entry_rename = None;
                                     }
                                     if i.key_pressed(Key::Enter) {
                                         input.is_editing = false;
@@ -385,7 +370,7 @@ impl Widget for &mut FunctionWidget<'_> {
                             });
                         }
                         if columns[0].button("Add...").clicked() {
-                            self.config.runnable.inputs.push(FunctionParam::default());
+                            self.runnable.inputs.push(FunctionParam::default());
                         };
                         let run_button = egui::Button::new("▶").rounding(5.0);
                         columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| {
@@ -394,8 +379,7 @@ impl Widget for &mut FunctionWidget<'_> {
                                 let prepend_code = format!(
                                     "{}{}{}",
                                     "let ",
-                                    self.config
-                                        .runnable
+                                    self.runnable
                                         .inputs
                                         .iter()
                                         .map(|input| input.param_name.clone())
@@ -403,11 +387,10 @@ impl Widget for &mut FunctionWidget<'_> {
                                         .join(" = 3; let "),
                                     " = 3;"
                                 );
-                                if let Ok(result) = self.config.engine.eval::<Map>(
-                                    format!("{} {}", prepend_code, &self.config.runnable.code)
-                                        .as_str(),
+                                if let Ok(result) = self.engine.eval::<Map>(
+                                    format!("{} {}", prepend_code, &self.runnable.code).as_str(),
                                 ) {
-                                    for ele in self.config.runnable.outputs.iter_mut() {
+                                    for ele in self.runnable.outputs.iter_mut() {
                                         if let Some(val) = result.get(ele.param_name.as_str()) {
                                             ele.last_value = Some(val.clone());
                                         }
@@ -415,7 +398,7 @@ impl Widget for &mut FunctionWidget<'_> {
                                 }
                             }
                         });
-                        for (idx, output) in self.config.runnable.outputs.iter_mut().enumerate() {
+                        for (idx, output) in self.runnable.outputs.iter_mut().enumerate() {
                             let label_response = columns[2].with_layout(
                                 egui::Layout::right_to_left(Align::Min),
                                 |ui| {
@@ -426,8 +409,8 @@ impl Widget for &mut FunctionWidget<'_> {
                                                 .wrap(true),
                                         )
                                     } else {
-                                        if self.config.entry_rename.is_none() {
-                                            self.config.entry_rename = Some(RenameOptions {
+                                        if self.entry_rename.is_none() {
+                                            self.entry_rename = Some(RenameOptions {
                                                 rename_idx: idx,
                                                 param_type: ParamType::Output,
                                                 new_name: output.param_name.clone(),
@@ -435,7 +418,6 @@ impl Widget for &mut FunctionWidget<'_> {
                                         }
                                         ui.add(TextEdit::singleline(
                                             &mut self
-                                                .config
                                                 .entry_rename
                                                 .as_mut()
                                                 .expect("Entry rename was not inited")
@@ -486,8 +468,8 @@ impl Widget for &mut FunctionWidget<'_> {
                             }
 
                             if label_response.inner.clicked() && !output.is_editing {
-                                self.config.has_vertex = Some(LinkVertex {
-                                    function_name: self.config.runnable.name.clone(),
+                                self.has_vertex = Some(LinkVertex {
+                                    function_name: self.runnable.name.clone(),
                                     param_type: ParamType::Output,
                                     param_name: output.param_name.clone(),
                                 });
@@ -504,7 +486,7 @@ impl Widget for &mut FunctionWidget<'_> {
 
                             if label_response.inner.double_clicked() {
                                 output.is_editing = true;
-                                self.config.has_vertex = None;
+                                self.has_vertex = None;
                             }
 
                             if label_response.inner.lost_focus()
@@ -516,7 +498,7 @@ impl Widget for &mut FunctionWidget<'_> {
                             columns[2].input(|i| {
                                 if i.key_pressed(Key::Escape) {
                                     output.is_editing = false;
-                                    self.config.entry_rename = None;
+                                    self.entry_rename = None;
                                 }
                                 if i.key_pressed(Key::Enter) {
                                     output.is_editing = false;
@@ -547,7 +529,7 @@ impl Widget for &mut FunctionWidget<'_> {
                             });
                         }
                         if columns[2].button("Add...").clicked() {
-                            self.config.runnable.outputs.push(FunctionParam::default());
+                            self.runnable.outputs.push(FunctionParam::default());
                         };
                     });
                 }
@@ -559,7 +541,7 @@ impl Widget for &mut FunctionWidget<'_> {
                 && window_response.response.rect.contains(pointer.unwrap())
                 && i.consume_shortcut(&KeyboardShortcut::new(Modifiers::CTRL, Key::Q))
             {
-                self.config.mode = if self.config.mode == WidgetMode::Signature {
+                self.mode = if self.mode == WidgetMode::Signature {
                     WidgetMode::Code
                 } else {
                     WidgetMode::Signature
@@ -567,8 +549,8 @@ impl Widget for &mut FunctionWidget<'_> {
             }
         });
 
-        self.config.is_collapsed = window_response.inner.is_none();
-        self.config.position = window_response.response.rect.left_top();
+        self.is_collapsed = window_response.inner.is_none();
+        self.position = window_response.response.rect.left_top();
 
         window_response.response
     }
