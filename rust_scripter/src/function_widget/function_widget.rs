@@ -279,8 +279,11 @@ impl Widget for &mut FunctionWidget<'_> {
                     ui.columns(3, |columns| {
                         for (idx, input) in self.config.runnable.inputs.iter_mut().enumerate() {
                             let label_response = if !input.is_editing {
-                                columns[0]
-                                    .add(Label::new(input.param_name.clone()).sense(Sense::click()))
+                                columns[0].add(
+                                    Label::new(input.param_name.clone())
+                                        .sense(Sense::click())
+                                        .wrap(true),
+                                )
                             } else {
                                 if self.config.entry_rename.is_none() {
                                     self.config.entry_rename = Some(RenameOptions {
@@ -411,7 +414,8 @@ impl Widget for &mut FunctionWidget<'_> {
                                     if !output.is_editing {
                                         ui.add(
                                             Label::new(output.param_name.clone())
-                                                .sense(Sense::click()),
+                                                .sense(Sense::click())
+                                                .wrap(true),
                                         )
                                     } else {
                                         if self.config.entry_rename.is_none() {
