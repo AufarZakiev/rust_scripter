@@ -422,39 +422,8 @@ impl TemplateApp {
             });
         }
     }
-}
 
-impl eframe::App for TemplateApp {
-    /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
-
-    /// Called each time the UI needs repainting, which may be many times per second.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
-
-        self.functions.retain(|ele| ele.is_open);
-
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-
-            egui::menu::bar(ui, |ui| {
-                #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
-                {
-                    ui.menu_button("File", |ui| {
-                        if ui.button("Quit").clicked() {
-                            _frame.close();
-                        }
-                    });
-                    ui.add_space(16.0);
-                }
-
-                egui::widgets::global_dark_light_mode_buttons(ui);
-            });
-        });
-
+    fn render_side_panel(&mut self, ctx: &egui::Context) {
         egui::SidePanel::left("Toolbox").show(ctx, |ui| {
             let icon = egui::Button::image_and_text(
                 egui::include_image!("../assets/function-icon.png"),
@@ -470,10 +439,29 @@ impl eframe::App for TemplateApp {
                 self.last_rect_id += 1;
             }
         });
+    }
+}
+
+impl eframe::App for TemplateApp {
+    /// Called by the frame work to save state before shutdown.
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, self);
+    }
+
+    /// Called each time the UI needs repainting, which may be many times per second.
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
+        // For inspiration and more examples, go to https://emilk.github.io/egui
+
+        render_top_panel(ctx, _frame);
+
+        self.render_side_panel(ctx);
 
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| powered_by_egui_and_eframe(ui));
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            self.functions.retain(|ele| ele.is_open);
+
             let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
             for ele in self.functions.iter_mut() {
@@ -487,6 +475,26 @@ impl eframe::App for TemplateApp {
             self.render_links(ui, stroke);
         });
     }
+}
+
+fn render_top_panel(ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+        // The top panel is often a good place for a menu bar:
+
+        egui::menu::bar(ui, |ui| {
+            #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
+            {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Quit").clicked() {
+                        _frame.close();
+                    }
+                });
+                ui.add_space(16.0);
+            }
+
+            egui::widgets::global_dark_light_mode_buttons(ui);
+        });
+    });
 }
 
 fn powered_by_egui_and_eframe(ui: &mut egui::Ui) {
