@@ -477,13 +477,10 @@ impl eframe::App for TemplateApp {
 
 fn powered_by_egui_and_eframe(ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
-        ui.label("Powered by ");
-        ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-        ui.label(" and ");
-        ui.hyperlink_to(
-            "eframe",
-            "https://github.com/emilk/egui/tree/master/crates/eframe",
-        );
-        ui.label(".");
+        ui.label("Powered by");
+        ui.hyperlink_to("egui. ", "https://github.com/emilk/egui");
+        ui.label("Source code");
+        ui.hyperlink_to("on GitHub", "https://github.com/AufarZakiev/rust_scripter");
+        ui.label(".")
     });
 }
