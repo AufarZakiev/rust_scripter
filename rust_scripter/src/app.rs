@@ -81,9 +81,11 @@ impl TemplateApp {
         Default::default()
     }
 
-    fn render_links(&mut self, stroke: egui::Stroke, ui: &mut egui::Ui) {
+    fn delete_old_links(&mut self) {
         self.links.retain(|link| !link.should_be_deleted);
+    }
 
+    fn render_links(&mut self, ui: &mut egui::Ui, stroke: egui::Stroke) {
         let collapsed_window_width = 160.0;
 
         for current_link in self.links.iter_mut() {
@@ -336,6 +338,90 @@ impl TemplateApp {
             }
         }
     }
+
+    fn create_finished_links(&mut self) {
+        let fw = &mut self.functions;
+        let links = &mut self.links;
+
+        if let Some(link_start_widget) = fw.iter().find(|widget| widget.has_vertex.is_some()) {
+            if let Some(link_end_widget) =
+                fw.iter().rev().find(|widget| widget.has_vertex.is_some())
+            {
+                if link_start_widget.runnable.name != link_end_widget.runnable.name {
+                    let (link_start, link_end) =
+                        if link_start_widget.has_vertex.as_ref().unwrap().param_type
+                            == ParamType::Input
+                        {
+                            (
+                                link_end_widget.has_vertex.clone().unwrap(),
+                                link_start_widget.has_vertex.clone().unwrap(),
+                            )
+                        } else {
+                            (
+                                link_start_widget.has_vertex.clone().unwrap(),
+                                link_end_widget.has_vertex.clone().unwrap(),
+                            )
+                        };
+
+                    links.push(Link {
+                        start: link_start,
+                        end: link_end,
+                        should_be_deleted: false,
+                    });
+
+                    if let Some(link_start_widget) =
+                        fw.iter_mut().find(|widget| widget.has_vertex.is_some())
+                    {
+                        link_start_widget.has_vertex.take();
+                    }
+
+                    if let Some(link_end) = fw.iter_mut().find(|widget| widget.has_vertex.is_some())
+                    {
+                        link_end.has_vertex.take();
+                    }
+                }
+            }
+        }
+    }
+
+    fn create_unfinished_link_if_clicked(&mut self, ui: &mut egui::Ui, stroke: egui::Stroke) {
+        let fw = &mut self.functions;
+        if let Some(link_start_widget) = fw.iter().find(|widget| widget.has_vertex.is_some()) {
+            if let Some(link_end) = ui.ctx().pointer_latest_pos() {
+                let link_start = link_start_widget.has_vertex.clone().unwrap();
+                let link_start_pos = link_start_widget.runnable.get_entry_by_vertex(&link_start);
+
+                let second_point = Pos2 {
+                    x: (link_start_pos.x + link_end.x) / 2.0,
+                    y: link_start_pos.y,
+                };
+                let third_point = Pos2 {
+                    x: (link_start_pos.x + link_end.x) / 2.0,
+                    y: link_end.y,
+                };
+
+                let points: [Pos2; 4] = [link_start_pos, second_point, third_point, link_end];
+                let curve =
+                    CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
+
+                ui.painter().add(curve);
+            }
+        }
+    }
+
+    fn cancel_link_if_esc(&mut self, ui: &mut egui::Ui) {
+        if let Some(link_start_widget) = self
+            .functions
+            .iter_mut()
+            .find(|widget| widget.has_vertex.is_some())
+        {
+            ui.input(|i| {
+                if i.key_pressed(Key::Escape) {
+                    link_start_widget.has_vertex.take();
+                }
+            });
+        }
+    }
 }
 
 impl eframe::App for TemplateApp {
@@ -394,93 +480,11 @@ impl eframe::App for TemplateApp {
                 ui.add(ele);
             }
 
-            cancel_link_if_esc(&mut self.functions, ui);
-
-            create_unfinished_link_if_clicked(&self.functions, ui, stroke);
-
-            create_finished_links(&mut self.links, &mut self.functions);
-
-            self.render_links(stroke, ui);
-        });
-    }
-}
-
-fn create_finished_links(links: &mut Vec<Link>, fw: &mut Vec<FunctionWidget>) {
-    if let Some(link_start_widget) = fw.iter().find(|widget| widget.has_vertex.is_some()) {
-        if let Some(link_end_widget) = fw.iter().rev().find(|widget| widget.has_vertex.is_some()) {
-            if link_start_widget.runnable.name != link_end_widget.runnable.name {
-                let (link_start, link_end) = if link_start_widget
-                    .has_vertex
-                    .as_ref()
-                    .unwrap()
-                    .param_type
-                    == ParamType::Input
-                {
-                    (
-                        link_end_widget.has_vertex.clone().unwrap(),
-                        link_start_widget.has_vertex.clone().unwrap(),
-                    )
-                } else {
-                    (
-                        link_start_widget.has_vertex.clone().unwrap(),
-                        link_end_widget.has_vertex.clone().unwrap(),
-                    )
-                };
-
-                links.push(Link {
-                    start: link_start,
-                    end: link_end,
-                    should_be_deleted: false,
-                });
-
-                if let Some(link_start_widget) =
-                    fw.iter_mut().find(|widget| widget.has_vertex.is_some())
-                {
-                    link_start_widget.has_vertex.take();
-                }
-
-                if let Some(link_end) = fw.iter_mut().find(|widget| widget.has_vertex.is_some()) {
-                    link_end.has_vertex.take();
-                }
-            }
-        }
-    }
-}
-
-fn create_unfinished_link_if_clicked(
-    fw: &Vec<FunctionWidget>,
-    ui: &mut egui::Ui,
-    stroke: egui::Stroke,
-) {
-    if let Some(link_start_widget) = fw.iter().find(|widget| widget.has_vertex.is_some()) {
-        if let Some(link_end) = ui.ctx().pointer_latest_pos() {
-            let link_start = link_start_widget.has_vertex.clone().unwrap();
-            let link_start_pos = link_start_widget.runnable.get_entry_by_vertex(&link_start);
-
-            let second_point = Pos2 {
-                x: (link_start_pos.x + link_end.x) / 2.0,
-                y: link_start_pos.y,
-            };
-            let third_point = Pos2 {
-                x: (link_start_pos.x + link_end.x) / 2.0,
-                y: link_end.y,
-            };
-
-            let points: [Pos2; 4] = [link_start_pos, second_point, third_point, link_end];
-            let curve =
-                CubicBezierShape::from_points_stroke(points, false, Default::default(), stroke);
-
-            ui.painter().add(curve);
-        }
-    }
-}
-
-fn cancel_link_if_esc(fw: &mut Vec<FunctionWidget>, ui: &mut egui::Ui) {
-    if let Some(link_start_widget) = fw.iter_mut().find(|widget| widget.has_vertex.is_some()) {
-        ui.input(|i| {
-            if i.key_pressed(Key::Escape) {
-                link_start_widget.has_vertex.take();
-            }
+            self.cancel_link_if_esc(ui);
+            self.create_unfinished_link_if_clicked(ui, stroke);
+            self.create_finished_links();
+            self.delete_old_links();
+            self.render_links(ui, stroke);
         });
     }
 }
