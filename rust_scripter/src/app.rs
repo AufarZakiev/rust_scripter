@@ -340,12 +340,16 @@ impl TemplateApp {
     }
 
     fn create_finished_links(&mut self) {
-        let fw = &mut self.functions;
-        let links = &mut self.links;
-
-        if let Some(link_start_widget) = fw.iter().find(|widget| widget.has_vertex.is_some()) {
-            if let Some(link_end_widget) =
-                fw.iter().rev().find(|widget| widget.has_vertex.is_some())
+        if let Some(link_start_widget) = self
+            .functions
+            .iter()
+            .find(|widget| widget.has_vertex.is_some())
+        {
+            if let Some(link_end_widget) = self
+                .functions
+                .iter()
+                .rev()
+                .find(|widget| widget.has_vertex.is_some())
             {
                 if link_start_widget.runnable.name != link_end_widget.runnable.name {
                     let (link_start, link_end) =
@@ -363,19 +367,24 @@ impl TemplateApp {
                             )
                         };
 
-                    links.push(Link {
+                    self.links.push(Link {
                         start: link_start,
                         end: link_end,
                         should_be_deleted: false,
                     });
 
-                    if let Some(link_start_widget) =
-                        fw.iter_mut().find(|widget| widget.has_vertex.is_some())
+                    if let Some(link_start_widget) = self
+                        .functions
+                        .iter_mut()
+                        .find(|widget| widget.has_vertex.is_some())
                     {
                         link_start_widget.has_vertex.take();
                     }
 
-                    if let Some(link_end) = fw.iter_mut().find(|widget| widget.has_vertex.is_some())
+                    if let Some(link_end) = self
+                        .functions
+                        .iter_mut()
+                        .find(|widget| widget.has_vertex.is_some())
                     {
                         link_end.has_vertex.take();
                     }
@@ -385,8 +394,11 @@ impl TemplateApp {
     }
 
     fn create_unfinished_link_if_clicked(&mut self, ui: &mut egui::Ui, stroke: egui::Stroke) {
-        let fw = &mut self.functions;
-        if let Some(link_start_widget) = fw.iter().find(|widget| widget.has_vertex.is_some()) {
+        if let Some(link_start_widget) = self
+            .functions
+            .iter()
+            .find(|widget| widget.has_vertex.is_some())
+        {
             if let Some(link_end) = ui.ctx().pointer_latest_pos() {
                 let link_start = link_start_widget.has_vertex.clone().unwrap();
                 let link_start_pos = link_start_widget.runnable.get_entry_by_vertex(&link_start);
@@ -459,6 +471,7 @@ impl eframe::App for TemplateApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             self.functions.retain(|ele| ele.is_open);
+            self.delete_old_links();
 
             let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
@@ -469,8 +482,39 @@ impl eframe::App for TemplateApp {
             self.cancel_link_if_esc(ui);
             self.create_unfinished_link_if_clicked(ui, stroke);
             self.create_finished_links();
-            self.delete_old_links();
             self.render_links(ui, stroke);
+
+            for current_link in self.links.iter_mut() {
+                let start_point_param = self
+                    .functions
+                    .iter()
+                    .find(|p| p.runnable.name == current_link.start.function_name)
+                    .unwrap()
+                    .runnable
+                    .outputs
+                    .iter()
+                    .find(|output| {
+                        output.param_name == current_link.start.param_name
+                            && output.last_value.is_some()
+                    });
+
+                if let Some(start_point_param) = start_point_param {
+                    let last_value_to_insert = start_point_param.last_value.clone().unwrap();
+
+                    let end_point_param = self
+                        .functions
+                        .iter_mut()
+                        .find(|p| p.runnable.name == current_link.end.function_name)
+                        .unwrap()
+                        .runnable
+                        .inputs
+                        .iter_mut()
+                        .find(|input| input.param_name == current_link.end.param_name)
+                        .unwrap();
+
+                    end_point_param.last_value = Some(last_value_to_insert);
+                }
+            }
         });
     }
 }

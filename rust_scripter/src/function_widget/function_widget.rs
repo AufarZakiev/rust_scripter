@@ -307,6 +307,33 @@ impl Widget for &mut FunctionWidget {
                             );
                             input.pos = circle_rect.center();
 
+                            if let Some(ref last_value) = input.last_value {
+                                if last_value.is_int() {
+                                    let layout = painter.layout_no_wrap(
+                                        last_value.clone().as_int().unwrap().to_string(),
+                                        font_id.clone(),
+                                        visuals.text_color(),
+                                    );
+                                    painter.rect(
+                                        Rect::from_center_size(
+                                            circle_rect.center() + Vec2 { x: -15.0, y: 0.0 },
+                                            layout.rect.size(),
+                                        )
+                                        .expand2(vec2(1.0, 0.0)),
+                                        Rounding::same(1.5),
+                                        Color32::LIGHT_GRAY,
+                                        stroke,
+                                    );
+                                    painter.text(
+                                        circle_rect.center() + Vec2 { x: -15.0, y: 0.0 },
+                                        Align2::CENTER_CENTER,
+                                        last_value.clone().as_int().unwrap().to_string(),
+                                        font_id.clone(),
+                                        visuals.text_color(),
+                                    );
+                                }
+                            }
+
                             if label_response.clicked() && !input.is_editing {
                                 self.has_vertex = Some(LinkVertex {
                                     function_name: self.runnable.name.clone(),
