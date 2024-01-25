@@ -484,6 +484,7 @@ impl eframe::App for TemplateApp {
             self.create_finished_links();
             self.render_links(ui, stroke);
 
+            self.delete_old_links();
             for current_link in self.links.iter_mut() {
                 let start_point_param = self
                     .functions
