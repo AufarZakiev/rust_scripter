@@ -299,16 +299,8 @@ impl Widget for &mut FunctionWidget {
                                 ))
                             };
 
-                            let circle_rect = Rect::from_center_size(
-                                label_response.rect.left_center() + Vec2 { x: -6.0, y: 0.0 },
-                                Vec2 { x: 10.0, y: 10.0 },
-                            );
-                            painter.circle(
-                                circle_rect.center(),
-                                5.0,
-                                Color32::from_rgb(128, 0, 0),
-                                stroke,
-                            );
+                            let circle_rect =
+                                paint_circle(&label_response, &painter, stroke, ParamType::Input);
                             input.pos = circle_rect.center();
 
                             if let Some(ref last_value) = input.last_value {
@@ -459,16 +451,11 @@ impl Widget for &mut FunctionWidget {
                                 },
                             );
 
-                            let circle_rect = Rect::from_center_size(
-                                label_response.response.rect.right_center()
-                                    + Vec2 { x: 6.0, y: 0.0 },
-                                Vec2 { x: 10.0, y: 10.0 },
-                            );
-                            painter.circle(
-                                circle_rect.center(),
-                                5.0,
-                                Color32::from_rgb(128, 0, 0),
+                            let circle_rect = paint_circle(
+                                &label_response.response,
+                                &painter,
                                 stroke,
+                                ParamType::Output,
                             );
                             output.pos = circle_rect.center();
 
@@ -587,4 +574,27 @@ impl Widget for &mut FunctionWidget {
 
         window_response.response
     }
+}
+
+fn paint_circle(
+    label_response: &egui::Response,
+    painter: &egui::Painter,
+    stroke: egui::Stroke,
+    param_type: ParamType,
+) -> Rect {
+    let circle_rect = Rect::from_center_size(
+        if param_type == ParamType::Input {
+            label_response.rect.left_center() + Vec2 { x: -6.0, y: 0.0 }
+        } else {
+            label_response.rect.right_center() + Vec2 { x: 6.0, y: 0.0 }
+        },
+        Vec2 { x: 10.0, y: 10.0 },
+    );
+    painter.circle(
+        circle_rect.center(),
+        5.0,
+        Color32::from_rgb(128, 0, 0),
+        stroke,
+    );
+    circle_rect
 }
