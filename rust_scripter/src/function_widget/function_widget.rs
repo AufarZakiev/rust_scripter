@@ -320,36 +320,14 @@ impl Widget for &mut FunctionWidget {
                                 });
                             }
 
-                            if label_response.hovered() {
-                                columns[0].painter().rect(
-                                    label_response.rect.expand(1.5),
-                                    Rounding::same(2.0),
-                                    Color32::TRANSPARENT,
-                                    stroke,
-                                )
-                            }
-
-                            if label_response.double_clicked() {
-                                input.is_editing = true;
-                                self.has_vertex = None;
-                            }
-
-                            if label_response.clicked_elsewhere() {
-                                input.is_editing = false;
-                                self.entry_rename = None;
-                            }
-
-                            if input.is_editing {
-                                columns[0].input(|i| {
-                                    if i.key_pressed(Key::Escape) {
-                                        input.is_editing = false;
-                                        self.entry_rename = None;
-                                    }
-                                    if i.key_pressed(Key::Enter) {
-                                        input.is_editing = false;
-                                    }
-                                });
-                            }
+                            add_label_behavoir(
+                                &mut self.has_vertex,
+                                &mut self.entry_rename,
+                                &label_response,
+                                input,
+                                columns,
+                                stroke,
+                            );
 
                             let is_circle_hovered =
                                 pointer.is_some() && circle_rect.contains(pointer.unwrap());
@@ -459,35 +437,14 @@ impl Widget for &mut FunctionWidget {
                                 });
                             }
 
-                            if label_response.inner.hovered() {
-                                columns[2].painter().rect(
-                                    label_response.response.rect.expand(1.5),
-                                    Rounding::same(2.0),
-                                    Color32::TRANSPARENT,
-                                    stroke,
-                                )
-                            }
-
-                            if label_response.inner.double_clicked() {
-                                output.is_editing = true;
-                                self.has_vertex = None;
-                            }
-
-                            if label_response.inner.lost_focus()
-                                || label_response.inner.clicked_elsewhere()
-                            {
-                                output.is_editing = false;
-                            }
-
-                            columns[2].input(|i| {
-                                if i.key_pressed(Key::Escape) {
-                                    output.is_editing = false;
-                                    self.entry_rename = None;
-                                }
-                                if i.key_pressed(Key::Enter) {
-                                    output.is_editing = false;
-                                }
-                            });
+                            add_label_behavoir(
+                                &mut self.has_vertex,
+                                &mut self.entry_rename,
+                                &label_response.inner,
+                                output,
+                                columns,
+                                stroke,
+                            );
 
                             let is_circle_hovered =
                                 pointer.is_some() && circle_rect.contains(pointer.unwrap());
@@ -540,6 +497,46 @@ impl Widget for &mut FunctionWidget {
 
         window_response.response
     }
+}
+
+fn add_label_behavoir(
+    has_vertex: &mut Option<LinkVertex>,
+    entry_rename: &mut Option<RenameOptions>,
+    label_response: &egui::Response,
+    param: &mut FunctionParam,
+    columns: &mut [egui::Ui],
+    stroke: egui::Stroke,
+) {
+    if label_response.hovered() {
+        columns[0].painter().rect(
+            label_response.rect.expand(1.5),
+            Rounding::same(2.0),
+            Color32::TRANSPARENT,
+            stroke,
+        )
+    }
+
+    if label_response.double_clicked() {
+        param.is_editing = true;
+        *has_vertex = None;
+    }
+
+    if label_response.clicked_elsewhere() {
+        param.is_editing = false;
+        *entry_rename = None;
+    }
+
+    if param.is_editing {
+        columns[0].input(|i| {
+            if i.key_pressed(Key::Escape) {
+                param.is_editing = false;
+                *entry_rename = None;
+            }
+            if i.key_pressed(Key::Enter) {
+                param.is_editing = false;
+            }
+        });
+    };
 }
 
 fn paint_last_value(
