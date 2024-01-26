@@ -303,32 +303,15 @@ impl Widget for &mut FunctionWidget {
                                 paint_circle(&label_response, &painter, stroke, ParamType::Input);
                             input.pos = circle_rect.center();
 
-                            if let Some(ref last_value) = input.last_value {
-                                if last_value.is_int() {
-                                    let layout = painter.layout_no_wrap(
-                                        last_value.clone().as_int().unwrap().to_string(),
-                                        font_id.clone(),
-                                        visuals.text_color(),
-                                    );
-                                    painter.rect(
-                                        Rect::from_center_size(
-                                            circle_rect.center() + Vec2 { x: -15.0, y: 0.0 },
-                                            layout.rect.size(),
-                                        )
-                                        .expand2(vec2(1.0, 0.0)),
-                                        Rounding::same(1.5),
-                                        Color32::LIGHT_GRAY,
-                                        stroke,
-                                    );
-                                    painter.text(
-                                        circle_rect.center() + Vec2 { x: -15.0, y: 0.0 },
-                                        Align2::CENTER_CENTER,
-                                        last_value.clone().as_int().unwrap().to_string(),
-                                        font_id.clone(),
-                                        visuals.text_color(),
-                                    );
-                                }
-                            }
+                            paint_last_value(
+                                input,
+                                &painter,
+                                &font_id,
+                                visuals,
+                                circle_rect,
+                                stroke,
+                                ParamType::Input,
+                            );
 
                             if label_response.clicked() && !input.is_editing {
                                 self.has_vertex = Some(LinkVertex {
@@ -459,32 +442,15 @@ impl Widget for &mut FunctionWidget {
                             );
                             output.pos = circle_rect.center();
 
-                            if let Some(ref last_value) = output.last_value {
-                                if last_value.is_int() {
-                                    let layout = painter.layout_no_wrap(
-                                        last_value.clone().as_int().unwrap().to_string(),
-                                        font_id.clone(),
-                                        visuals.text_color(),
-                                    );
-                                    painter.rect(
-                                        Rect::from_center_size(
-                                            circle_rect.center() + Vec2 { x: 15.0, y: 0.0 },
-                                            layout.rect.size(),
-                                        )
-                                        .expand2(vec2(1.0, 0.0)),
-                                        Rounding::same(1.5),
-                                        Color32::LIGHT_GRAY,
-                                        stroke,
-                                    );
-                                    painter.text(
-                                        circle_rect.center() + Vec2 { x: 15.0, y: 0.0 },
-                                        Align2::CENTER_CENTER,
-                                        last_value.clone().as_int().unwrap().to_string(),
-                                        font_id.clone(),
-                                        visuals.text_color(),
-                                    );
-                                }
-                            }
+                            paint_last_value(
+                                output,
+                                &painter,
+                                &font_id,
+                                visuals,
+                                circle_rect,
+                                stroke,
+                                ParamType::Output,
+                            );
 
                             if label_response.inner.clicked() && !output.is_editing {
                                 self.has_vertex = Some(LinkVertex {
@@ -573,6 +539,56 @@ impl Widget for &mut FunctionWidget {
         self.position = window_response.response.rect.left_top();
 
         window_response.response
+    }
+}
+
+fn paint_last_value(
+    output: &mut FunctionParam,
+    painter: &egui::Painter,
+    font_id: &egui::FontId,
+    visuals: &egui::Visuals,
+    circle_rect: Rect,
+    stroke: egui::Stroke,
+    param_type: ParamType,
+) {
+    let signum = if param_type == ParamType::Input {
+        -1.0
+    } else {
+        1.0
+    };
+    if let Some(ref last_value) = output.last_value {
+        if last_value.is_int() {
+            let layout = painter.layout_no_wrap(
+                last_value.clone().as_int().unwrap().to_string(),
+                font_id.clone(),
+                visuals.text_color(),
+            );
+            painter.rect(
+                Rect::from_center_size(
+                    circle_rect.center()
+                        + Vec2 {
+                            x: signum * 15.0,
+                            y: 0.0,
+                        },
+                    layout.rect.size(),
+                )
+                .expand2(vec2(1.0, 0.0)),
+                Rounding::same(1.5),
+                Color32::LIGHT_GRAY,
+                stroke,
+            );
+            painter.text(
+                circle_rect.center()
+                    + Vec2 {
+                        x: signum * 15.0,
+                        y: 0.0,
+                    },
+                Align2::CENTER_CENTER,
+                last_value.clone().as_int().unwrap().to_string(),
+                font_id.clone(),
+                visuals.text_color(),
+            );
+        }
     }
 }
 
