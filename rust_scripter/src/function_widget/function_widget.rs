@@ -2,8 +2,10 @@ use egui::{
     vec2, widgets::Widget, Align, Align2, Button, Color32, Id, Key, KeyboardShortcut, Label,
     LayerId, Modifiers, Order, Pos2, Rect, Rounding, Sense, TextEdit, TextStyle, Vec2, Window,
 };
+use indexmap::IndexMap;
 use rhai::Map;
 use serde::{Deserialize, Serialize};
+use tinyid::TinyId;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub enum ParamType {
@@ -14,8 +16,7 @@ pub enum ParamType {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct LinkVertex {
     pub function_name: String,
-    pub param_type: ParamType,
-    pub param_name: String,
+    pub param_id: TinyId,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -58,22 +59,28 @@ impl FunctionParam {
 pub struct Runnable {
     pub name: String,
     pub code: String,
-    pub inputs: Vec<FunctionParam>,
-    pub outputs: Vec<FunctionParam>,
+    pub inputs: IndexMap<TinyId, FunctionParam>,
+    pub outputs: IndexMap<TinyId, FunctionParam>,
 }
 
 impl Default for Runnable {
     fn default() -> Self {
-        let inputs = vec![
-            FunctionParam::default_with_name("Input1"),
-            FunctionParam::default_with_name("Input2"),
-            FunctionParam::default_with_name("Input3"),
-        ];
+        let inputs = IndexMap::from_iter([
+            (TinyId::random(), FunctionParam::default_with_name("Input1")),
+            (TinyId::random(), FunctionParam::default_with_name("Input2")),
+            (TinyId::random(), FunctionParam::default_with_name("Input3")),
+        ]);
 
-        let outputs = vec![
-            FunctionParam::default_with_name("Output1"),
-            FunctionParam::default_with_name("Output2"),
-        ];
+        let outputs = IndexMap::from_iter([
+            (
+                TinyId::random(),
+                FunctionParam::default_with_name("Output1"),
+            ),
+            (
+                TinyId::random(),
+                FunctionParam::default_with_name("Output2"),
+            ),
+        ]);
         Self {
             name: "Function #0".to_owned(),
             code: r#"let val = #{Output1: Input1, Output2: Input2};
@@ -87,25 +94,22 @@ val"#
 
 impl Runnable {
     pub fn get_entry_by_vertex(&self, vertex: &LinkVertex) -> Pos2 {
-        if vertex.param_type == ParamType::Input {
-            self.inputs
-                .iter()
-                .find(|out| out.param_name == vertex.param_name)
-                .unwrap()
-                .pos
-        } else {
-            self.outputs
-                .iter()
-                .find(|out| out.param_name == vertex.param_name)
-                .unwrap()
-                .pos
+        if let Some(input) = self.inputs.get(&vertex.param_id) {
+            return input.pos;
         }
+        if let Some(output) = self.outputs.get(&vertex.param_id) {
+            return output.pos;
+        }
+        panic!(
+            "No vertex found with {}, {}",
+            vertex.function_name, vertex.param_id
+        )
     }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct RenameOptions {
-    pub rename_idx: usize,
+    pub rename_id: TinyId,
     pub param_type: ParamType,
     pub new_name: String,
 }
@@ -113,7 +117,7 @@ pub struct RenameOptions {
 impl Default for RenameOptions {
     fn default() -> Self {
         Self {
-            rename_idx: Default::default(),
+            rename_id: Default::default(),
             param_type: ParamType::Input,
             new_name: Default::default(),
         }
@@ -192,17 +196,17 @@ impl Widget for &mut FunctionWidget {
 
         self.runnable
             .inputs
-            .retain(|input| !input.should_be_deleted);
+            .retain(|_, input| !input.should_be_deleted);
 
         if let Some(ref rename_options) = self.entry_rename {
             if rename_options.param_type == ParamType::Input {
                 self.runnable
                     .inputs
-                    .get_mut(rename_options.rename_idx)
+                    .get_mut(&rename_options.rename_id)
                     .expect(
                         format!(
                             "Rename options are invalid: {}, {}",
-                            rename_options.rename_idx, rename_options.new_name
+                            rename_options.rename_id, rename_options.new_name
                         )
                         .as_str(),
                     )
@@ -210,11 +214,11 @@ impl Widget for &mut FunctionWidget {
             } else {
                 self.runnable
                     .outputs
-                    .get_mut(rename_options.rename_idx)
+                    .get_mut(&rename_options.rename_id)
                     .expect(
                         format!(
                             "Rename options are invalid: {}, {}",
-                            rename_options.rename_idx, rename_options.new_name
+                            rename_options.rename_id, rename_options.new_name
                         )
                         .as_str(),
                     )
@@ -224,7 +228,7 @@ impl Widget for &mut FunctionWidget {
 
         self.runnable
             .outputs
-            .retain(|output| !output.should_be_deleted);
+            .retain(|_, output| !output.should_be_deleted);
 
         let pointer = ui.ctx().pointer_latest_pos();
         let font_id = TextStyle::Body.resolve(ui.style());
@@ -271,7 +275,7 @@ impl Widget for &mut FunctionWidget {
                     let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
                     ui.columns(3, |columns| {
-                        for (idx, input) in self.runnable.inputs.iter_mut().enumerate() {
+                        for (input_id, input) in self.runnable.inputs.iter_mut() {
                             let label_response = if !input.is_editing {
                                 columns[0].add(
                                     Label::new(input.param_name.clone())
@@ -281,7 +285,7 @@ impl Widget for &mut FunctionWidget {
                             } else {
                                 if self.entry_rename.is_none() {
                                     self.entry_rename = Some(RenameOptions {
-                                        rename_idx: idx,
+                                        rename_id: input_id.clone(),
                                         param_type: ParamType::Input,
                                         new_name: input.param_name.clone(),
                                     });
@@ -337,8 +341,7 @@ impl Widget for &mut FunctionWidget {
                             if label_response.clicked() && !input.is_editing {
                                 self.has_vertex = Some(LinkVertex {
                                     function_name: self.runnable.name.clone(),
-                                    param_type: ParamType::Input,
-                                    param_name: input.param_name.clone(),
+                                    param_id: input_id.clone(),
                                 });
                             }
 
@@ -397,7 +400,9 @@ impl Widget for &mut FunctionWidget {
                             });
                         }
                         if columns[0].button("Add...").clicked() {
-                            self.runnable.inputs.push(FunctionParam::default());
+                            self.runnable
+                                .inputs
+                                .insert(TinyId::random(), FunctionParam::default());
                         };
                         let run_button = egui::Button::new("▶").rounding(5.0);
                         columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| {
@@ -409,7 +414,7 @@ impl Widget for &mut FunctionWidget {
                                     self.runnable
                                         .inputs
                                         .iter()
-                                        .map(|input| input.param_name.clone())
+                                        .map(|input| input.1.param_name.clone())
                                         .collect::<Vec<String>>()
                                         .join(" = 3; let "),
                                     " = 3;"
@@ -418,14 +423,14 @@ impl Widget for &mut FunctionWidget {
                                     format!("{} {}", prepend_code, &self.runnable.code).as_str(),
                                 ) {
                                     for ele in self.runnable.outputs.iter_mut() {
-                                        if let Some(val) = result.get(ele.param_name.as_str()) {
-                                            ele.last_value = Some(val.clone());
+                                        if let Some(val) = result.get(ele.1.param_name.as_str()) {
+                                            ele.1.last_value = Some(val.clone());
                                         }
                                     }
                                 }
                             }
                         });
-                        for (idx, output) in self.runnable.outputs.iter_mut().enumerate() {
+                        for (output_id, output) in self.runnable.outputs.iter_mut() {
                             let label_response = columns[2].with_layout(
                                 egui::Layout::right_to_left(Align::Min),
                                 |ui| {
@@ -438,7 +443,7 @@ impl Widget for &mut FunctionWidget {
                                     } else {
                                         if self.entry_rename.is_none() {
                                             self.entry_rename = Some(RenameOptions {
-                                                rename_idx: idx,
+                                                rename_id: output_id.clone(),
                                                 param_type: ParamType::Output,
                                                 new_name: output.param_name.clone(),
                                             });
@@ -497,8 +502,7 @@ impl Widget for &mut FunctionWidget {
                             if label_response.inner.clicked() && !output.is_editing {
                                 self.has_vertex = Some(LinkVertex {
                                     function_name: self.runnable.name.clone(),
-                                    param_type: ParamType::Output,
-                                    param_name: output.param_name.clone(),
+                                    param_id: output_id.clone(),
                                 });
                             }
 
@@ -556,7 +560,9 @@ impl Widget for &mut FunctionWidget {
                             });
                         }
                         if columns[2].button("Add...").clicked() {
-                            self.runnable.outputs.push(FunctionParam::default());
+                            self.runnable
+                                .outputs
+                                .insert(TinyId::random(), FunctionParam::default());
                         };
                     });
                 }

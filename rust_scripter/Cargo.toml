@@ -18,11 +18,12 @@ egui_extras = { version = "0.25.0", features = ["image", "syntect"] }
 image = { version = "0.24", default-features = false, features = ["png"] }
 log = "0.4"
 vectorize = "0.2.0"
-indexmap = "2.1.0"
+indexmap =  { version = "2.1.0", features = ['serde'] }
 rhai = { version = "1.16.3", features = ["only_i64", "internals", "wasm-bindgen", "serde"] }
 
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
+tinyid = { version = "1.0.3", features = ['serde'] }
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

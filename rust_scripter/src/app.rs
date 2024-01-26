@@ -2,8 +2,8 @@ use egui::epaint::QuadraticBezierShape;
 use egui::{epaint::CubicBezierShape, Key, Label, Pos2, Rect, Sense, Vec2};
 use serde::{Deserialize, Serialize};
 
+use crate::function_widget::function_widget::WidgetMode;
 use crate::function_widget::function_widget::{FunctionWidget, LinkVertex};
-use crate::function_widget::function_widget::{ParamType, WidgetMode};
 
 #[derive(Deserialize, Serialize)]
 struct Link {
@@ -23,24 +23,22 @@ pub struct TemplateApp {
 
 impl Default for TemplateApp {
     fn default() -> Self {
+        let function1 = FunctionWidget::default();
+        let function2 =
+            FunctionWidget::default_with_pos(Pos2 { x: 180.0, y: 40.0 }, "Function #1".to_owned());
+        let param_id1 = function1.runnable.outputs.get_index(0).unwrap().0.clone();
+        let param_id2 = function2.runnable.inputs.get_index(0).unwrap().0.clone();
+
         Self {
-            functions: vec![
-                FunctionWidget::default(),
-                FunctionWidget::default_with_pos(
-                    Pos2 { x: 180.0, y: 40.0 },
-                    "Function #1".to_owned(),
-                ),
-            ],
+            functions: vec![function1, function2],
             links: vec![Link {
                 start: LinkVertex {
                     function_name: "Function #0".to_owned(),
-                    param_type: ParamType::Input,
-                    param_name: "Output1".to_owned(),
+                    param_id: param_id1,
                 },
                 end: LinkVertex {
                     function_name: "Function #1".to_owned(),
-                    param_type: ParamType::Output,
-                    param_name: "Input1".to_owned(),
+                    param_id: param_id2,
                 },
                 should_be_deleted: false,
             }],
@@ -110,14 +108,12 @@ impl TemplateApp {
             let start_param = start_point_widget
                 .runnable
                 .outputs
-                .iter()
-                .find(|out| out.param_name == current_link.start.param_name);
+                .get(&current_link.start.param_id);
 
             let end_param = end_point_widget
                 .runnable
                 .inputs
-                .iter()
-                .find(|out| out.param_name == current_link.end.param_name);
+                .get(&current_link.end.param_id);
 
             if start_param.is_none() || end_param.is_none() {
                 current_link.should_be_deleted = true;
@@ -352,20 +348,22 @@ impl TemplateApp {
                 .find(|widget| widget.has_vertex.is_some())
             {
                 if link_start_widget.runnable.name != link_end_widget.runnable.name {
-                    let (link_start, link_end) =
-                        if link_start_widget.has_vertex.as_ref().unwrap().param_type
-                            == ParamType::Input
-                        {
-                            (
-                                link_end_widget.has_vertex.clone().unwrap(),
-                                link_start_widget.has_vertex.clone().unwrap(),
-                            )
-                        } else {
-                            (
-                                link_start_widget.has_vertex.clone().unwrap(),
-                                link_end_widget.has_vertex.clone().unwrap(),
-                            )
-                        };
+                    let (link_start, link_end) = if link_start_widget
+                        .runnable
+                        .inputs
+                        .get(&link_start_widget.has_vertex.as_ref().unwrap().param_id)
+                        .is_some()
+                    {
+                        (
+                            link_end_widget.has_vertex.clone().unwrap(),
+                            link_start_widget.has_vertex.clone().unwrap(),
+                        )
+                    } else {
+                        (
+                            link_start_widget.has_vertex.clone().unwrap(),
+                            link_end_widget.has_vertex.clone().unwrap(),
+                        )
+                    };
 
                     self.links.push(Link {
                         start: link_start,
@@ -493,27 +491,25 @@ impl eframe::App for TemplateApp {
                     .unwrap()
                     .runnable
                     .outputs
-                    .iter()
-                    .find(|output| {
-                        output.param_name == current_link.start.param_name
-                            && output.last_value.is_some()
-                    });
+                    .get(&current_link.start.param_id)
+                    .unwrap()
+                    .last_value
+                    .clone();
 
-                if let Some(start_point_param) = start_point_param {
-                    let last_value_to_insert = start_point_param.last_value.clone().unwrap();
+                if start_point_param.is_some() {
+                    if let Some(last_value) = start_point_param {
+                        let end_point_param = self
+                            .functions
+                            .iter_mut()
+                            .find(|p| p.runnable.name == current_link.end.function_name)
+                            .unwrap()
+                            .runnable
+                            .inputs
+                            .get_mut(&current_link.end.param_id)
+                            .unwrap();
 
-                    let end_point_param = self
-                        .functions
-                        .iter_mut()
-                        .find(|p| p.runnable.name == current_link.end.function_name)
-                        .unwrap()
-                        .runnable
-                        .inputs
-                        .iter_mut()
-                        .find(|input| input.param_name == current_link.end.param_name)
-                        .unwrap();
-
-                    end_point_param.last_value = Some(last_value_to_insert);
+                        end_point_param.last_value = Some(last_value);
+                    }
                 }
             }
         });

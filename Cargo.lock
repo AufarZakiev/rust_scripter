@@ -1492,6 +1492,7 @@ checksum = "d530e1a18b1cb4c484e6e34556a0d948706958449fca0cab753d649f2bce3d1f"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.3",
+ "serde",
 ]
 
 [[package]]
@@ -2239,6 +2240,7 @@ dependencies = [
  "log",
  "rhai",
  "serde",
+ "tinyid",
  "vectorize",
  "wasm-bindgen-futures",
 ]
@@ -2598,6 +2600,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c9d3793400a45f954c52e73d068316d76b6f4e36977e3fcebb13a2721e80237"
 dependencies = [
  "crunchy",
+]
+
+[[package]]
+name = "tinyid"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ce2c0dac4e3fcad3f6529e3d76ca55e7fa135d5afc442bbcaf756dc62cf8eeb"
+dependencies = [
+ "fastrand",
+ "serde",
 ]
 
 [[package]]
