@@ -298,7 +298,7 @@ impl Widget for &mut FunctionWidget {
                             };
 
                             let circle_rect =
-                                paint_circle(&label_response, &painter, stroke, ParamType::Input);
+                                paint_circle(&columns[0], &label_response, ParamType::Input);
                             input.pos = circle_rect.center();
 
                             paint_last_value(&columns[0], input, circle_rect, ParamType::Input);
@@ -402,12 +402,8 @@ impl Widget for &mut FunctionWidget {
                                 },
                             );
 
-                            let circle_rect = paint_circle(
-                                &label_response.response,
-                                &painter,
-                                stroke,
-                                ParamType::Output,
-                            );
+                            let circle_rect =
+                                paint_circle(&columns[2], &label_response.inner, ParamType::Output);
                             output.pos = circle_rect.center();
 
                             paint_last_value(&columns[2], output, circle_rect, ParamType::Output);
@@ -568,12 +564,7 @@ fn paint_last_value(ui: &Ui, output: &mut FunctionParam, circle_rect: Rect, para
     }
 }
 
-fn paint_circle(
-    label_response: &egui::Response,
-    painter: &egui::Painter,
-    stroke: egui::Stroke,
-    param_type: ParamType,
-) -> Rect {
+fn paint_circle(ui: &Ui, label_response: &egui::Response, param_type: ParamType) -> Rect {
     let circle_rect = Rect::from_center_size(
         if param_type == ParamType::Input {
             label_response.rect.left_center() + Vec2 { x: -6.0, y: 0.0 }
@@ -582,11 +573,11 @@ fn paint_circle(
         },
         Vec2 { x: 10.0, y: 10.0 },
     );
-    painter.circle(
+    ui.painter().circle(
         circle_rect.center(),
         5.0,
         Color32::from_rgb(128, 0, 0),
-        stroke,
+        ui.visuals().widgets.hovered.bg_stroke,
     );
     circle_rect
 }
