@@ -1,6 +1,6 @@
 use egui::{
     vec2, widgets::Widget, Align, Align2, Button, Color32, Id, Key, KeyboardShortcut, Label,
-    LayerId, Modifiers, Order, Pos2, Rect, Rounding, Sense, TextEdit, TextStyle, Vec2, Window,
+    LayerId, Modifiers, Order, Pos2, Rect, Rounding, Sense, TextEdit, TextStyle, Ui, Vec2, Window,
 };
 use indexmap::IndexMap;
 use rhai::Map;
@@ -231,8 +231,6 @@ impl Widget for &mut FunctionWidget {
             .retain(|_, output| !output.should_be_deleted);
 
         let pointer = ui.ctx().pointer_latest_pos();
-        let font_id = TextStyle::Body.resolve(ui.style());
-        let visuals = ui.visuals();
 
         let window_response = window
             .show(ui.ctx(), |ui| {
@@ -303,15 +301,7 @@ impl Widget for &mut FunctionWidget {
                                 paint_circle(&label_response, &painter, stroke, ParamType::Input);
                             input.pos = circle_rect.center();
 
-                            paint_last_value(
-                                input,
-                                &painter,
-                                &font_id,
-                                visuals,
-                                circle_rect,
-                                stroke,
-                                ParamType::Input,
-                            );
+                            paint_last_value(&columns[0], input, circle_rect, ParamType::Input);
 
                             if label_response.clicked() && !input.is_editing {
                                 self.has_vertex = Some(LinkVertex {
@@ -420,15 +410,7 @@ impl Widget for &mut FunctionWidget {
                             );
                             output.pos = circle_rect.center();
 
-                            paint_last_value(
-                                output,
-                                &painter,
-                                &font_id,
-                                visuals,
-                                circle_rect,
-                                stroke,
-                                ParamType::Output,
-                            );
+                            paint_last_value(&columns[2], output, circle_rect, ParamType::Output);
 
                             if label_response.inner.clicked() && !output.is_editing {
                                 self.has_vertex = Some(LinkVertex {
@@ -539,15 +521,12 @@ fn add_label_behavoir(
     };
 }
 
-fn paint_last_value(
-    output: &mut FunctionParam,
-    painter: &egui::Painter,
-    font_id: &egui::FontId,
-    visuals: &egui::Visuals,
-    circle_rect: Rect,
-    stroke: egui::Stroke,
-    param_type: ParamType,
-) {
+fn paint_last_value(ui: &Ui, output: &mut FunctionParam, circle_rect: Rect, param_type: ParamType) {
+    let font_id = TextStyle::Body.resolve(ui.style());
+    let visuals = ui.visuals();
+    let painter = ui.painter();
+    let stroke = ui.visuals().widgets.hovered.bg_stroke;
+
     let signum = if param_type == ParamType::Input {
         -1.0
     } else {
