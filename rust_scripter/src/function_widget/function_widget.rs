@@ -278,6 +278,7 @@ impl Widget for &mut FunctionWidget {
                                 ParamType::Input,
                             );
                             let label_response = label_row.0;
+                            let circle_response = label_row.1;
                             let circle_rect = label_row.2;
 
                             paint_circle(&columns[0], &circle_rect);
@@ -285,7 +286,9 @@ impl Widget for &mut FunctionWidget {
 
                             paint_last_value(&columns[0], input, circle_rect, ParamType::Input);
 
-                            if label_response.clicked() && !input.is_editing {
+                            if (label_response.clicked() || circle_response.clicked())
+                                && !input.is_editing
+                            {
                                 self.has_vertex = Some(LinkVertex {
                                     function_name: self.runnable.name.clone(),
                                     param_id: input_id.clone(),
@@ -299,10 +302,7 @@ impl Widget for &mut FunctionWidget {
                                 &label_response,
                                 input,
                             );
-
-                            let is_circle_hovered =
-                                pointer.is_some() && circle_rect.contains(pointer.unwrap());
-                            if label_response.hovered() || is_circle_hovered {
+                            if label_response.hovered() || circle_response.hovered() {
                                 columns[0].painter().circle(
                                     circle_rect.center(),
                                     2.5,
@@ -364,6 +364,7 @@ impl Widget for &mut FunctionWidget {
                                     ParamType::Output,
                                 );
                                 let label_response = label_row.0;
+                                let circle_response = label_row.1;
                                 let circle_rect = label_row.2;
 
                                 paint_circle(ui, &circle_rect);
@@ -371,7 +372,9 @@ impl Widget for &mut FunctionWidget {
 
                                 paint_last_value(ui, output, circle_rect, ParamType::Output);
 
-                                if label_response.clicked() && !output.is_editing {
+                                if (label_response.clicked() || circle_response.clicked())
+                                    && !output.is_editing
+                                {
                                     self.has_vertex = Some(LinkVertex {
                                         function_name: self.runnable.name.clone(),
                                         param_id: output_id.clone(),
@@ -449,7 +452,7 @@ fn render_editable_label(
 ) -> (Response, Response, Rect) {
     if !param.is_editing {
         let row = ui.horizontal(|ui| {
-            let circle = ui.allocate_exact_size(vec2(5.0, 5.0), Sense::hover());
+            let circle = ui.allocate_exact_size(vec2(5.0, 5.0), Sense::click());
             let label_response = ui.add(
                 Label::new(param.param_name.clone())
                     .sense(Sense::click())
