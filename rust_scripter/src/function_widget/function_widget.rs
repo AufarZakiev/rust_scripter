@@ -1,6 +1,7 @@
 use egui::{
     vec2, widgets::Widget, Align, Align2, Button, Color32, Id, Key, KeyboardShortcut, Label,
-    LayerId, Modifiers, Order, Pos2, Rect, Rounding, Sense, TextEdit, TextStyle, Ui, Vec2, Window,
+    LayerId, Modifiers, Order, Pos2, Rect, Response, Rounding, Sense, TextEdit, TextStyle, Ui,
+    Vec2, Window,
 };
 use indexmap::IndexMap;
 use rhai::Map;
@@ -144,7 +145,7 @@ pub struct FunctionWidget {
     pub has_vertex: Option<LinkVertex>,
     pub mode: WidgetMode,
     // Temp values
-    pub entry_rename: Option<RenameOptions>,
+    pub rename_options: Option<RenameOptions>,
     // Engine to run the code
     #[serde(skip, default = "rhai::Engine::new")]
     pub engine: rhai::Engine,
@@ -169,14 +170,14 @@ impl FunctionWidget {
     pub fn new(runnable: Runnable, initial_pos: Pos2, is_open: bool, is_collapsed: bool) -> Self {
         Self {
             position: initial_pos,
-            interactive_size: Vec2 { x: 200.0, y: 100.0 },
+            interactive_size: Vec2 { x: 230.0, y: 100.0 },
             code_size: Vec2 { x: 400.0, y: 100.0 },
             runnable,
             is_open,
             is_collapsed,
             has_vertex: None,
             mode: WidgetMode::Signature,
-            entry_rename: None,
+            rename_options: None,
             engine: rhai::Engine::new(),
         }
     }
@@ -198,7 +199,7 @@ impl Widget for &mut FunctionWidget {
             .inputs
             .retain(|_, input| !input.should_be_deleted);
 
-        if let Some(ref rename_options) = self.entry_rename {
+        if let Some(ref rename_options) = self.rename_options {
             if rename_options.param_type == ParamType::Input {
                 self.runnable
                     .inputs
@@ -265,40 +266,21 @@ impl Widget for &mut FunctionWidget {
                             .layouter(&mut layouter),
                     );
                 } else {
-                    let painter = ui.ctx().layer_painter(LayerId::new(
-                        Order::Foreground,
-                        Id::new(self.runnable.name.clone()),
-                    ));
-
                     let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
                     ui.columns(3, |columns| {
                         for (input_id, input) in self.runnable.inputs.iter_mut() {
-                            let label_response = if !input.is_editing {
-                                columns[0].add(
-                                    Label::new(input.param_name.clone())
-                                        .sense(Sense::click())
-                                        .wrap(true),
-                                )
-                            } else {
-                                if self.entry_rename.is_none() {
-                                    self.entry_rename = Some(RenameOptions {
-                                        rename_id: input_id.clone(),
-                                        param_type: ParamType::Input,
-                                        new_name: input.param_name.clone(),
-                                    });
-                                }
-                                columns[0].add(TextEdit::singleline(
-                                    &mut self
-                                        .entry_rename
-                                        .as_mut()
-                                        .expect("Entry rename was not inited")
-                                        .new_name,
-                                ))
-                            };
+                            let label_row = render_editable_label(
+                                &mut columns[0],
+                                &mut self.rename_options,
+                                input,
+                                input_id,
+                                ParamType::Input,
+                            );
+                            let label_response = label_row.0;
+                            let circle_rect = label_row.2;
 
-                            let circle_rect =
-                                paint_circle(&columns[0], &label_response, ParamType::Input);
+                            paint_circle(&columns[0], &circle_rect);
                             input.pos = circle_rect.center();
 
                             paint_last_value(&columns[0], input, circle_rect, ParamType::Input);
@@ -311,18 +293,17 @@ impl Widget for &mut FunctionWidget {
                             }
 
                             add_label_behavoir(
+                                &mut columns[0],
                                 &mut self.has_vertex,
-                                &mut self.entry_rename,
+                                &mut self.rename_options,
                                 &label_response,
                                 input,
-                                columns,
-                                stroke,
                             );
 
                             let is_circle_hovered =
                                 pointer.is_some() && circle_rect.contains(pointer.unwrap());
                             if label_response.hovered() || is_circle_hovered {
-                                painter.circle(
+                                columns[0].painter().circle(
                                     circle_rect.center(),
                                     2.5,
                                     Color32::from_rgb(255, 255, 255),
@@ -374,77 +355,59 @@ impl Widget for &mut FunctionWidget {
                             }
                         });
                         for (output_id, output) in self.runnable.outputs.iter_mut() {
-                            let label_response = columns[2].with_layout(
-                                egui::Layout::right_to_left(Align::Min),
-                                |ui| {
-                                    if !output.is_editing {
-                                        ui.add(
-                                            Label::new(output.param_name.clone())
-                                                .sense(Sense::click())
-                                                .wrap(true),
-                                        )
-                                    } else {
-                                        if self.entry_rename.is_none() {
-                                            self.entry_rename = Some(RenameOptions {
-                                                rename_id: output_id.clone(),
-                                                param_type: ParamType::Output,
-                                                new_name: output.param_name.clone(),
-                                            });
-                                        }
-                                        ui.add(TextEdit::singleline(
-                                            &mut self
-                                                .entry_rename
-                                                .as_mut()
-                                                .expect("Entry rename was not inited")
-                                                .new_name,
-                                        ))
+                            columns[2].with_layout(egui::Layout::right_to_left(Align::Min), |ui| {
+                                let label_row = render_editable_label(
+                                    ui,
+                                    &mut self.rename_options,
+                                    output,
+                                    output_id,
+                                    ParamType::Output,
+                                );
+                                let label_response = label_row.0;
+                                let circle_rect = label_row.2;
+
+                                paint_circle(ui, &circle_rect);
+                                output.pos = circle_rect.center();
+
+                                paint_last_value(ui, output, circle_rect, ParamType::Output);
+
+                                if label_response.clicked() && !output.is_editing {
+                                    self.has_vertex = Some(LinkVertex {
+                                        function_name: self.runnable.name.clone(),
+                                        param_id: output_id.clone(),
+                                    });
+                                }
+
+                                add_label_behavoir(
+                                    ui,
+                                    &mut self.has_vertex,
+                                    &mut self.rename_options,
+                                    &label_response,
+                                    output,
+                                );
+
+                                let is_circle_hovered =
+                                    pointer.is_some() && circle_rect.contains(pointer.unwrap());
+                                if label_response.hovered() || is_circle_hovered {
+                                    ui.painter().circle(
+                                        circle_rect.center(),
+                                        2.5,
+                                        Color32::from_rgb(255, 255, 255),
+                                        stroke,
+                                    )
+                                }
+
+                                label_response.context_menu(|ui| {
+                                    let btn = Button::new("Edit").shortcut_text("Double-click");
+                                    if ui.add(btn).clicked() {
+                                        output.is_editing = true;
+                                        ui.close_menu();
                                     }
-                                },
-                            );
-
-                            let circle_rect =
-                                paint_circle(&columns[2], &label_response.inner, ParamType::Output);
-                            output.pos = circle_rect.center();
-
-                            paint_last_value(&columns[2], output, circle_rect, ParamType::Output);
-
-                            if label_response.inner.clicked() && !output.is_editing {
-                                self.has_vertex = Some(LinkVertex {
-                                    function_name: self.runnable.name.clone(),
-                                    param_id: output_id.clone(),
+                                    if ui.button("Delete").clicked() {
+                                        output.should_be_deleted = true;
+                                        ui.close_menu();
+                                    }
                                 });
-                            }
-
-                            add_label_behavoir(
-                                &mut self.has_vertex,
-                                &mut self.entry_rename,
-                                &label_response.inner,
-                                output,
-                                columns,
-                                stroke,
-                            );
-
-                            let is_circle_hovered =
-                                pointer.is_some() && circle_rect.contains(pointer.unwrap());
-                            if label_response.inner.hovered() || is_circle_hovered {
-                                painter.circle(
-                                    circle_rect.center(),
-                                    2.5,
-                                    Color32::from_rgb(255, 255, 255),
-                                    stroke,
-                                )
-                            }
-
-                            label_response.inner.context_menu(|ui| {
-                                let btn = Button::new("Edit").shortcut_text("Double-click");
-                                if ui.add(btn).clicked() {
-                                    output.is_editing = true;
-                                    ui.close_menu();
-                                }
-                                if ui.button("Delete").clicked() {
-                                    output.should_be_deleted = true;
-                                    ui.close_menu();
-                                }
                             });
                         }
                         if columns[2].button("Add...").clicked() {
@@ -477,20 +440,60 @@ impl Widget for &mut FunctionWidget {
     }
 }
 
+fn render_editable_label(
+    ui: &mut Ui,
+    entry_options: &mut Option<RenameOptions>,
+    param: &mut FunctionParam,
+    param_id: &TinyId,
+    param_type: ParamType,
+) -> (Response, Response, Rect) {
+    if !param.is_editing {
+        let row = ui.horizontal(|ui| {
+            let circle = ui.allocate_exact_size(vec2(5.0, 5.0), Sense::hover());
+            let label_response = ui.add(
+                Label::new(param.param_name.clone())
+                    .sense(Sense::click())
+                    .wrap(true),
+            );
+            return (label_response, circle.1, circle.0);
+        });
+        return row.inner;
+    }
+
+    if entry_options.is_none() {
+        *entry_options = Some(RenameOptions {
+            rename_id: param_id.clone(),
+            param_type: param_type.clone(),
+            new_name: param.param_name.clone(),
+        });
+    }
+
+    let row = ui.horizontal(|ui| {
+        let circle = ui.allocate_exact_size(vec2(5.0, 5.0), Sense::hover());
+        let label_response = ui.add(TextEdit::singleline(
+            &mut entry_options
+                .as_mut()
+                .expect("Entry rename was not inited")
+                .new_name,
+        ));
+        return (label_response, circle.1, circle.0);
+    });
+    return row.inner;
+}
+
 fn add_label_behavoir(
+    ui: &mut egui::Ui,
     has_vertex: &mut Option<LinkVertex>,
     entry_rename: &mut Option<RenameOptions>,
     label_response: &egui::Response,
     param: &mut FunctionParam,
-    columns: &mut [egui::Ui],
-    stroke: egui::Stroke,
 ) {
-    if label_response.hovered() {
-        columns[0].painter().rect(
-            label_response.rect.expand(1.5),
+    if label_response.hovered() && !param.is_editing {
+        ui.painter().rect(
+            label_response.rect.expand2(vec2(3.0, 1.5)),
             Rounding::same(2.0),
             Color32::TRANSPARENT,
-            stroke,
+            ui.visuals().widgets.hovered.bg_stroke,
         )
     }
 
@@ -505,7 +508,7 @@ fn add_label_behavoir(
     }
 
     if param.is_editing {
-        columns[0].input(|i| {
+        ui.input(|i| {
             if i.key_pressed(Key::Escape) {
                 param.is_editing = false;
                 *entry_rename = None;
@@ -517,10 +520,13 @@ fn add_label_behavoir(
     };
 }
 
-fn paint_last_value(ui: &Ui, output: &mut FunctionParam, circle_rect: Rect, param_type: ParamType) {
+fn paint_last_value(ui: &Ui, param: &mut FunctionParam, circle_rect: Rect, param_type: ParamType) {
     let font_id = TextStyle::Body.resolve(ui.style());
     let visuals = ui.visuals();
-    let painter = ui.painter();
+    let painter = ui.ctx().layer_painter(LayerId::new(
+        Order::Foreground,
+        Id::new(param.param_name.clone()),
+    ));
     let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
     let signum = if param_type == ParamType::Input {
@@ -528,7 +534,7 @@ fn paint_last_value(ui: &Ui, output: &mut FunctionParam, circle_rect: Rect, para
     } else {
         1.0
     };
-    if let Some(ref last_value) = output.last_value {
+    if let Some(ref last_value) = param.last_value {
         if last_value.is_int() {
             let layout = painter.layout_no_wrap(
                 last_value.clone().as_int().unwrap().to_string(),
@@ -539,7 +545,7 @@ fn paint_last_value(ui: &Ui, output: &mut FunctionParam, circle_rect: Rect, para
                 Rect::from_center_size(
                     circle_rect.center()
                         + Vec2 {
-                            x: signum * 15.0,
+                            x: signum * 20.0,
                             y: 0.0,
                         },
                     layout.rect.size(),
@@ -552,7 +558,7 @@ fn paint_last_value(ui: &Ui, output: &mut FunctionParam, circle_rect: Rect, para
             painter.text(
                 circle_rect.center()
                     + Vec2 {
-                        x: signum * 15.0,
+                        x: signum * 20.0,
                         y: 0.0,
                     },
                 Align2::CENTER_CENTER,
@@ -564,20 +570,11 @@ fn paint_last_value(ui: &Ui, output: &mut FunctionParam, circle_rect: Rect, para
     }
 }
 
-fn paint_circle(ui: &Ui, label_response: &egui::Response, param_type: ParamType) -> Rect {
-    let circle_rect = Rect::from_center_size(
-        if param_type == ParamType::Input {
-            label_response.rect.left_center() + Vec2 { x: -6.0, y: 0.0 }
-        } else {
-            label_response.rect.right_center() + Vec2 { x: 6.0, y: 0.0 }
-        },
-        Vec2 { x: 10.0, y: 10.0 },
-    );
+fn paint_circle(ui: &Ui, circle_rect: &Rect) {
     ui.painter().circle(
         circle_rect.center(),
         5.0,
         Color32::from_rgb(128, 0, 0),
         ui.visuals().widgets.hovered.bg_stroke,
     );
-    circle_rect
 }

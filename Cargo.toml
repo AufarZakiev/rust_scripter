@@ -1,3 +1,4 @@
+patch = { crates-io = { egui = { path = "/home/aufarz/.rhack/egui-0.25.0" } } }
 [workspace]
 resolver = "2"
 members = [
