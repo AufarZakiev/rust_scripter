@@ -6,6 +6,7 @@ use egui::{
 use indexmap::IndexMap;
 use rhai::Map;
 use serde::{Deserialize, Serialize};
+use std::any::type_name;
 use tinyid::TinyId;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
@@ -538,38 +539,47 @@ fn paint_last_value(ui: &Ui, param: &mut FunctionParam, circle_rect: Rect, param
         1.0
     };
     if let Some(ref last_value) = param.last_value {
-        if last_value.is_int() {
-            let layout = painter.layout_no_wrap(
-                last_value.clone().as_int().unwrap().to_string(),
-                font_id.clone(),
-                visuals.text_color(),
-            );
-            painter.rect(
-                Rect::from_center_size(
-                    circle_rect.center()
-                        + Vec2 {
-                            x: signum * 20.0,
-                            y: 0.0,
-                        },
-                    layout.rect.size(),
-                )
-                .expand2(vec2(1.0, 0.0)),
-                Rounding::same(1.5),
-                Color32::LIGHT_GRAY,
-                stroke,
-            );
-            painter.text(
+        let _float_type = type_name::<rhai::FLOAT>();
+        let _int_type = type_name::<rhai::INT>();
+        let last_value_string = match last_value.type_name() {
+            "()" => String::default(),
+            "bool" => String::default(),
+            "string" => String::default(),
+            "char" => String::default(),
+            "i64" => last_value.clone().as_int().unwrap().to_string(),
+            "f64" => String::default(),
+            "array" => String::default(),
+            "map" => String::default(),
+            _ => String::default(),
+        };
+
+        let layout =
+            painter.layout_no_wrap(last_value_string, font_id.clone(), visuals.text_color());
+        painter.rect(
+            Rect::from_center_size(
                 circle_rect.center()
                     + Vec2 {
                         x: signum * 20.0,
                         y: 0.0,
                     },
-                Align2::CENTER_CENTER,
-                last_value.clone().as_int().unwrap().to_string(),
-                font_id.clone(),
-                visuals.text_color(),
-            );
-        }
+                layout.rect.size(),
+            )
+            .expand2(vec2(1.0, 0.0)),
+            Rounding::same(1.5),
+            Color32::LIGHT_GRAY,
+            stroke,
+        );
+        painter.text(
+            circle_rect.center()
+                + Vec2 {
+                    x: signum * 20.0,
+                    y: 0.0,
+                },
+            Align2::CENTER_CENTER,
+            last_value.clone().as_int().unwrap().to_string(),
+            font_id.clone(),
+            visuals.text_color(),
+        );
     }
 }
 
