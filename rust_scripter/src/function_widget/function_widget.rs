@@ -549,11 +549,11 @@ fn paint_last_value(ui: &Ui, param: &mut FunctionParam, circle_rect: Rect, param
             visuals.text_color(),
         );
         painter.rect(
-            Rect::from_min_size(
-                circle_rect.left_top()
+            Rect::from_center_size(
+                circle_rect.center()
                     + Vec2 {
-                        x: signum * 17.0,
-                        y: -5.0,
+                        x: signum * 17.0 + signum * layout.rect.width() / 2.0,
+                        y: 0.0,
                     },
                 layout.rect.size(),
             )
@@ -563,12 +563,12 @@ fn paint_last_value(ui: &Ui, param: &mut FunctionParam, circle_rect: Rect, param
             stroke,
         );
         painter.text(
-            circle_rect.left_top()
+            circle_rect.center()
                 + Vec2 {
-                    x: signum * 17.0,
-                    y: -5.0,
+                    x: signum * 17.0 + signum * layout.rect.width() / 2.0,
+                    y: 0.0,
                 },
-            Align2::LEFT_TOP,
+            Align2::CENTER_CENTER,
             last_value_string,
             font_id.clone(),
             visuals.text_color(),
