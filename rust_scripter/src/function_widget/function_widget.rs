@@ -541,26 +541,19 @@ fn paint_last_value(ui: &Ui, param: &mut FunctionParam, circle_rect: Rect, param
     if let Some(ref last_value) = param.last_value {
         let _float_type = type_name::<rhai::FLOAT>();
         let _int_type = type_name::<rhai::INT>();
-        let last_value_string = match last_value.type_name() {
-            "()" => String::default(),
-            "bool" => String::default(),
-            "string" => String::default(),
-            "char" => String::default(),
-            "i64" => last_value.clone().as_int().unwrap().to_string(),
-            "f64" => String::default(),
-            "array" => String::default(),
-            "map" => String::default(),
-            _ => String::default(),
-        };
+        let last_value_string = last_value.clone().to_string();
 
-        let layout =
-            painter.layout_no_wrap(last_value_string, font_id.clone(), visuals.text_color());
+        let layout = painter.layout_no_wrap(
+            last_value_string.clone(),
+            font_id.clone(),
+            visuals.text_color(),
+        );
         painter.rect(
-            Rect::from_center_size(
-                circle_rect.center()
+            Rect::from_min_size(
+                circle_rect.left_top()
                     + Vec2 {
-                        x: signum * 20.0,
-                        y: 0.0,
+                        x: signum * 17.0,
+                        y: -5.0,
                     },
                 layout.rect.size(),
             )
@@ -570,13 +563,13 @@ fn paint_last_value(ui: &Ui, param: &mut FunctionParam, circle_rect: Rect, param
             stroke,
         );
         painter.text(
-            circle_rect.center()
+            circle_rect.left_top()
                 + Vec2 {
-                    x: signum * 20.0,
-                    y: 0.0,
+                    x: signum * 17.0,
+                    y: -5.0,
                 },
-            Align2::CENTER_CENTER,
-            last_value.clone().as_int().unwrap().to_string(),
+            Align2::LEFT_TOP,
+            last_value_string,
             font_id.clone(),
             visuals.text_color(),
         );
