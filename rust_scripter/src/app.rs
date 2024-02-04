@@ -399,7 +399,7 @@ impl TemplateApp {
         {
             if let Some(link_end) = ui.ctx().pointer_latest_pos() {
                 let link_start = link_start_widget.has_vertex.clone().unwrap();
-                let link_start_pos = link_start_widget.runnable.get_entry_by_vertex(&link_start);
+                let link_start_pos = link_start_widget.runnable.get_param_by_vertex(&link_start);
 
                 let second_point = Pos2 {
                     x: (link_start_pos.x + link_end.x) / 2.0,

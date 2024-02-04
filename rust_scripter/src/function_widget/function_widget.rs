@@ -27,6 +27,7 @@ pub struct FunctionParam {
     pub type_name: String,
     pub pos: Pos2,
     pub should_be_deleted: bool,
+    pub is_renaming: bool,
     pub is_editing: bool,
     pub last_value: Option<rhai::Dynamic>,
 }
@@ -38,6 +39,7 @@ impl Default for FunctionParam {
             type_name: "String".to_string(),
             pos: Pos2::default(),
             should_be_deleted: false,
+            is_renaming: false,
             is_editing: false,
             last_value: None,
         }
@@ -51,6 +53,7 @@ impl FunctionParam {
             type_name: "String".to_string(),
             pos: Pos2::default(),
             should_be_deleted: false,
+            is_renaming: false,
             is_editing: false,
             last_value: None,
         }
@@ -95,7 +98,7 @@ val"#
 }
 
 impl Runnable {
-    pub fn get_entry_by_vertex(&self, vertex: &LinkVertex) -> Pos2 {
+    pub fn get_param_by_vertex(&self, vertex: &LinkVertex) -> Pos2 {
         if let Some(input) = self.inputs.get(&vertex.param_id) {
             return input.pos;
         }
@@ -288,7 +291,7 @@ impl Widget for &mut FunctionWidget {
                             paint_last_value(&columns[0], input, circle_rect, ParamType::Input);
 
                             if (label_response.clicked() || circle_response.clicked())
-                                && !input.is_editing
+                                && !input.is_renaming
                             {
                                 self.has_vertex = Some(LinkVertex {
                                     function_name: self.runnable.name.clone(),
@@ -313,9 +316,12 @@ impl Widget for &mut FunctionWidget {
                             }
 
                             label_response.context_menu(|ui| {
-                                let btn = Button::new("Edit").shortcut_text("Double-click");
-                                if ui.add(btn).clicked() {
+                                if ui.button("Set constant").clicked() {
                                     input.is_editing = true;
+                                }
+                                let btn = Button::new("Rename").shortcut_text("Double-click");
+                                if ui.add(btn).clicked() {
+                                    input.is_renaming = true;
                                     ui.close_menu();
                                 }
                                 if ui.button("Delete").clicked() {
@@ -374,7 +380,7 @@ impl Widget for &mut FunctionWidget {
                                 paint_last_value(ui, output, circle_rect, ParamType::Output);
 
                                 if (label_response.clicked() || circle_response.clicked())
-                                    && !output.is_editing
+                                    && !output.is_renaming
                                 {
                                     self.has_vertex = Some(LinkVertex {
                                         function_name: self.runnable.name.clone(),
@@ -404,7 +410,7 @@ impl Widget for &mut FunctionWidget {
                                 label_response.context_menu(|ui| {
                                     let btn = Button::new("Edit").shortcut_text("Double-click");
                                     if ui.add(btn).clicked() {
-                                        output.is_editing = true;
+                                        output.is_renaming = true;
                                         ui.close_menu();
                                     }
                                     if ui.button("Delete").clicked() {
@@ -446,12 +452,12 @@ impl Widget for &mut FunctionWidget {
 
 fn render_editable_label(
     ui: &mut Ui,
-    entry_options: &mut Option<RenameOptions>,
+    rename_options: &mut Option<RenameOptions>,
     param: &mut FunctionParam,
     param_id: &TinyId,
     param_type: ParamType,
 ) -> (Response, Response, Rect) {
-    if !param.is_editing {
+    if !param.is_renaming {
         let row = ui.horizontal(|ui| {
             let circle = ui.allocate_exact_size(vec2(5.0, 5.0), Sense::click());
             let label_response = ui.add(
@@ -464,8 +470,8 @@ fn render_editable_label(
         return row.inner;
     }
 
-    if entry_options.is_none() {
-        *entry_options = Some(RenameOptions {
+    if rename_options.is_none() {
+        *rename_options = Some(RenameOptions {
             rename_id: param_id.clone(),
             param_type: param_type.clone(),
             new_name: param.param_name.clone(),
@@ -475,7 +481,7 @@ fn render_editable_label(
     let row = ui.horizontal(|ui| {
         let circle = ui.allocate_exact_size(vec2(5.0, 5.0), Sense::hover());
         let label_response = ui.add(TextEdit::singleline(
-            &mut entry_options
+            &mut rename_options
                 .as_mut()
                 .expect("Entry rename was not inited")
                 .new_name,
@@ -488,11 +494,11 @@ fn render_editable_label(
 fn add_label_behavoir(
     ui: &mut egui::Ui,
     has_vertex: &mut Option<LinkVertex>,
-    entry_rename: &mut Option<RenameOptions>,
+    param_rename_options: &mut Option<RenameOptions>,
     label_response: &egui::Response,
     param: &mut FunctionParam,
 ) {
-    if label_response.hovered() && !param.is_editing {
+    if label_response.hovered() && !param.is_renaming {
         ui.painter().rect(
             label_response.rect.expand2(vec2(3.0, 1.5)),
             Rounding::same(2.0),
@@ -502,22 +508,25 @@ fn add_label_behavoir(
     }
 
     if label_response.double_clicked() {
-        param.is_editing = true;
+        param.is_renaming = true;
         *has_vertex = None;
     }
 
     if label_response.clicked_elsewhere() {
+        param.is_renaming = false;
         param.is_editing = false;
-        *entry_rename = None;
+        *param_rename_options = None;
     }
 
-    if param.is_editing {
+    if param.is_renaming || param.is_editing {
         ui.input(|i| {
             if i.key_pressed(Key::Escape) {
+                param.is_renaming = false;
                 param.is_editing = false;
-                *entry_rename = None;
+                *param_rename_options = None;
             }
             if i.key_pressed(Key::Enter) {
+                param.is_renaming = false;
                 param.is_editing = false;
             }
         });
