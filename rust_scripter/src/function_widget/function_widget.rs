@@ -1,10 +1,10 @@
 use egui::{
-    vec2, widgets::Widget, Align, Align2, Button, Color32, Id, Key, KeyboardShortcut, Label,
-    LayerId, Modifiers, Order, Pos2, Rect, Response, Rounding, Sense, TextEdit, TextStyle, Ui,
-    Vec2, Window,
+    vec2, widgets::Widget, Align, Align2, Area, Button, Color32, Frame, Id, Key, KeyboardShortcut,
+    Label, LayerId, Modifiers, Order, Pos2, Rect, Response, Rounding, Sense, TextEdit, TextStyle,
+    Ui, Vec2, Window,
 };
 use indexmap::IndexMap;
-use rhai::Map;
+use rhai::{Dynamic, Map};
 use serde::{Deserialize, Serialize};
 use std::any::type_name;
 use tinyid::TinyId;
@@ -129,6 +129,21 @@ impl Default for RenameOptions {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct EditOptions {
+    pub edit_id: TinyId,
+    pub new_last_value: String,
+}
+
+impl Default for EditOptions {
+    fn default() -> Self {
+        Self {
+            edit_id: Default::default(),
+            new_last_value: Default::default(),
+        }
+    }
+}
+
 #[derive(PartialEq, Deserialize, Serialize)]
 pub enum WidgetMode {
     Code,
@@ -150,6 +165,7 @@ pub struct FunctionWidget {
     pub mode: WidgetMode,
     // Temp values
     pub rename_options: Option<RenameOptions>,
+    pub edit_options: Option<EditOptions>,
     // Engine to run the code
     #[serde(skip, default = "rhai::Engine::new")]
     pub engine: rhai::Engine,
@@ -182,6 +198,7 @@ impl FunctionWidget {
             has_vertex: None,
             mode: WidgetMode::Signature,
             rename_options: None,
+            edit_options: None,
             engine: rhai::Engine::new(),
         }
     }
@@ -288,7 +305,13 @@ impl Widget for &mut FunctionWidget {
                             paint_circle(&columns[0], &circle_rect);
                             input.pos = circle_rect.center();
 
-                            paint_last_value(&columns[0], input, circle_rect, ParamType::Input);
+                            paint_last_value(
+                                &columns[0],
+                                input,
+                                circle_rect,
+                                &mut self.edit_options,
+                                ParamType::Input,
+                            );
 
                             if (label_response.clicked() || circle_response.clicked())
                                 && !input.is_renaming
@@ -318,6 +341,8 @@ impl Widget for &mut FunctionWidget {
                             label_response.context_menu(|ui| {
                                 if ui.button("Set constant").clicked() {
                                     input.is_editing = true;
+                                    ui.memory_mut(|mem| mem.toggle_popup("constant_id".into()));
+                                    ui.close_menu();
                                 }
                                 let btn = Button::new("Rename").shortcut_text("Double-click");
                                 if ui.add(btn).clicked() {
@@ -377,7 +402,13 @@ impl Widget for &mut FunctionWidget {
                                 paint_circle(ui, &circle_rect);
                                 output.pos = circle_rect.center();
 
-                                paint_last_value(ui, output, circle_rect, ParamType::Output);
+                                paint_last_value(
+                                    ui,
+                                    output,
+                                    circle_rect,
+                                    &mut None,
+                                    ParamType::Output,
+                                );
 
                                 if (label_response.clicked() || circle_response.clicked())
                                     && !output.is_renaming
@@ -533,7 +564,13 @@ fn add_label_behavoir(
     };
 }
 
-fn paint_last_value(ui: &Ui, param: &mut FunctionParam, circle_rect: Rect, param_type: ParamType) {
+fn paint_last_value(
+    ui: &Ui,
+    param: &mut FunctionParam,
+    circle_rect: Rect,
+    edit_options: &mut Option<EditOptions>,
+    param_type: ParamType,
+) {
     let font_id = TextStyle::Body.resolve(ui.style());
     let visuals = ui.visuals();
     let painter = ui.ctx().layer_painter(LayerId::new(
@@ -547,7 +584,36 @@ fn paint_last_value(ui: &Ui, param: &mut FunctionParam, circle_rect: Rect, param
     } else {
         1.0
     };
-    if let Some(ref last_value) = param.last_value {
+
+    if param.is_editing {
+        let popup_id = Id::new("constant_id");
+
+        if ui.memory(|mem| mem.is_popup_open(popup_id)) {
+            if edit_options.is_none() {
+                *edit_options = Some(EditOptions::default())
+            }
+            let constant_value = &mut edit_options.as_mut().unwrap().new_last_value;
+            let area_response = Area::new(popup_id)
+                .order(Order::Foreground)
+                .fixed_pos(param.pos)
+                .constrain(true)
+                .show(ui.ctx(), |ui| {
+                    Frame::popup(ui.style()).show(ui, |ui| {
+                        ui.text_edit_singleline(constant_value).request_focus()
+                    });
+                })
+                .response;
+
+            if ui.input(|i| i.key_pressed(Key::Enter)) {
+                ui.memory_mut(|mem| mem.close_popup());
+                let parsed = constant_value.parse::<i64>();
+                if let Ok(value) = parsed {
+                    param.last_value = Some(Dynamic::from_int(value));
+                }
+                *edit_options = None;
+            }
+        }
+    } else if let Some(ref last_value) = param.last_value {
         let _float_type = type_name::<rhai::FLOAT>();
         let _int_type = type_name::<rhai::INT>();
         let last_value_string = last_value.clone().to_string();
