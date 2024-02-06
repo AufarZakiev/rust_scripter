@@ -434,21 +434,30 @@ impl TemplateApp {
     }
 
     fn render_side_panel(&mut self, ctx: &egui::Context) {
-        egui::SidePanel::left("Toolbox").show(ctx, |ui| {
-            let icon = egui::Button::image_and_text(
-                egui::include_image!("../assets/function-icon.png"),
-                "Add function",
-            )
-            .rounding(5.0);
-            let icon_response = ui.add(icon);
-            if icon_response.clicked() {
-                self.functions.push(FunctionWidget::default_with_pos(
-                    Pos2 { x: 0.0, y: 0.0 },
-                    format!("Function #{}", self.last_rect_id),
-                ));
-                self.last_rect_id += 1;
-            }
-        });
+        egui::SidePanel::left("Toolbox")
+            .exact_width(80.0)
+            .show(ctx, |ui| {
+                ui.add_space(5.0);
+                let btn_response = ui.add(
+                    egui::Button::image_and_text(
+                        egui::include_image!("../assets/function-icon.png"),
+                        "Add function",
+                    )
+                    .rounding(5.0),
+                );
+                if btn_response.clicked() {
+                    self.functions.push(FunctionWidget::default_with_pos(
+                        Pos2 { x: 0.0, y: 0.0 },
+                        format!("Function #{}", self.last_rect_id),
+                    ));
+                    self.last_rect_id += 1;
+                }
+                ui.add_space(5.0);
+                let btn_response = ui.add(egui::Button::new("▶ Run all").rounding(5.0));
+                // if btn_response.clicked() {
+                //     self.functions
+                // }
+            });
     }
 }
 
