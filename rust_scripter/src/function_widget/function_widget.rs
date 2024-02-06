@@ -4,7 +4,7 @@ use egui::{
     Ui, Vec2, Window,
 };
 use indexmap::IndexMap;
-use rhai::{Dynamic, Map};
+use rhai::{Dynamic, Engine, Map};
 use serde::{Deserialize, Serialize};
 use std::any::type_name;
 use tinyid::TinyId;
@@ -109,6 +109,27 @@ impl Runnable {
             "No vertex found with {}, {}",
             vertex.function_name, vertex.param_id
         )
+    }
+
+    pub fn run(&mut self, engine: &Engine) {
+        let prepend_code = format!(
+            "{}{}{}",
+            "let ",
+            self.inputs
+                .iter()
+                .map(|input| input.1.param_name.clone())
+                .collect::<Vec<String>>()
+                .join(" = 3; let "),
+            " = 3;"
+        );
+        if let Ok(result) = engine.eval::<Map>(format!("{} {}", prepend_code, &self.code).as_str())
+        {
+            for ele in self.outputs.iter_mut() {
+                if let Some(val) = result.get(ele.1.param_name.as_str()) {
+                    ele.1.last_value = Some(val.clone());
+                }
+            }
+        }
     }
 }
 
@@ -364,26 +385,7 @@ impl Widget for &mut FunctionWidget {
                         columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| {
                             let run_button_response = ui.add(run_button);
                             if run_button_response.clicked() {
-                                let prepend_code = format!(
-                                    "{}{}{}",
-                                    "let ",
-                                    self.runnable
-                                        .inputs
-                                        .iter()
-                                        .map(|input| input.1.param_name.clone())
-                                        .collect::<Vec<String>>()
-                                        .join(" = 3; let "),
-                                    " = 3;"
-                                );
-                                if let Ok(result) = self.engine.eval::<Map>(
-                                    format!("{} {}", prepend_code, &self.runnable.code).as_str(),
-                                ) {
-                                    for ele in self.runnable.outputs.iter_mut() {
-                                        if let Some(val) = result.get(ele.1.param_name.as_str()) {
-                                            ele.1.last_value = Some(val.clone());
-                                        }
-                                    }
-                                }
+                                self.runnable.run(&self.engine);
                             }
                         });
                         for (output_id, output) in self.runnable.outputs.iter_mut() {
