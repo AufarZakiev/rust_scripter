@@ -356,7 +356,7 @@ impl Widget for &mut FunctionWidget {
                                     2.5,
                                     Color32::from_rgb(255, 255, 255),
                                     stroke,
-                                )
+                                );
                             }
 
                             label_response.context_menu(|ui| {
@@ -437,7 +437,7 @@ impl Widget for &mut FunctionWidget {
                                         2.5,
                                         Color32::from_rgb(255, 255, 255),
                                         stroke,
-                                    )
+                                    );
                                 }
 
                                 label_response.context_menu(|ui| {
@@ -537,7 +537,7 @@ fn add_label_behavoir(
             Rounding::same(2.0),
             Color32::TRANSPARENT,
             ui.visuals().widgets.hovered.bg_stroke,
-        )
+        );
     }
 
     if label_response.double_clicked() {
