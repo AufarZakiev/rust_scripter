@@ -1,6 +1,8 @@
 use egui::epaint::QuadraticBezierShape;
 use egui::{epaint::CubicBezierShape, Key, Label, Pos2, Rect, Sense, Vec2};
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
+use tinyid::TinyId;
 
 use crate::function_widget::function_widget::WidgetMode;
 use crate::function_widget::function_widget::{FunctionWidget, LinkVertex};
@@ -16,7 +18,7 @@ struct Link {
 #[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
-    functions: Vec<FunctionWidget>,
+    functions: IndexMap<TinyId, FunctionWidget>,
     links: Vec<Link>,
     last_rect_id: usize,
 }
@@ -41,7 +43,7 @@ impl Default for TemplateApp {
                 },
                 should_be_deleted: false,
             }],
-            functions: vec![function1, function2],
+            functions: IndexMap::from([(function1.id, function1), (function2.id, function2)]),
             last_rect_id: 3,
         }
     }
@@ -61,7 +63,7 @@ impl TemplateApp {
         // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
             if let Some(mut storage) = eframe::get_value::<TemplateApp>(storage, eframe::APP_KEY) {
-                if let Some(last_rect) = storage.functions.last() {
+                if let Some((_, last_rect)) = storage.functions.last() {
                     storage.last_rect_id = last_rect
                         .runnable
                         .name
@@ -87,15 +89,8 @@ impl TemplateApp {
         let collapsed_window_width = 160.0;
 
         for current_link in self.links.iter_mut() {
-            let start_point_widget = self
-                .functions
-                .iter()
-                .find(|p| p.id == current_link.start.function_id);
-
-            let end_point_widget = self
-                .functions
-                .iter()
-                .find(|p| p.id == current_link.end.function_id);
+            let start_point_widget = self.functions.get(&current_link.start.function_id);
+            let end_point_widget = self.functions.get(&current_link.end.function_id);
 
             if start_point_widget.is_none() || end_point_widget.is_none() {
                 current_link.should_be_deleted = true;
@@ -336,16 +331,16 @@ impl TemplateApp {
     }
 
     fn create_finished_links(&mut self) {
-        if let Some(link_start_widget) = self
+        if let Some((_, link_start_widget)) = self
             .functions
             .iter()
-            .find(|widget| widget.has_vertex.is_some())
+            .find(|(_, widget)| widget.has_vertex.is_some())
         {
-            if let Some(link_end_widget) = self
+            if let Some((_, link_end_widget)) = self
                 .functions
                 .iter()
                 .rev()
-                .find(|widget| widget.has_vertex.is_some())
+                .find(|(_, widget)| widget.has_vertex.is_some())
             {
                 if link_start_widget.runnable.name != link_end_widget.runnable.name {
                     let (link_start, link_end) = if link_start_widget
@@ -371,18 +366,18 @@ impl TemplateApp {
                         should_be_deleted: false,
                     });
 
-                    if let Some(link_start_widget) = self
+                    if let Some((_, link_start_widget)) = self
                         .functions
                         .iter_mut()
-                        .find(|widget| widget.has_vertex.is_some())
+                        .find(|(_, widget)| widget.has_vertex.is_some())
                     {
                         link_start_widget.has_vertex.take();
                     }
 
-                    if let Some(link_end) = self
+                    if let Some((_, link_end)) = self
                         .functions
                         .iter_mut()
-                        .find(|widget| widget.has_vertex.is_some())
+                        .find(|(_, widget)| widget.has_vertex.is_some())
                     {
                         link_end.has_vertex.take();
                     }
@@ -392,10 +387,10 @@ impl TemplateApp {
     }
 
     fn create_unfinished_link_if_clicked(&mut self, ui: &mut egui::Ui, stroke: egui::Stroke) {
-        if let Some(link_start_widget) = self
+        if let Some((_, link_start_widget)) = self
             .functions
             .iter()
-            .find(|widget| widget.has_vertex.is_some())
+            .find(|(_, widget)| widget.has_vertex.is_some())
         {
             if let Some(link_end) = ui.ctx().pointer_latest_pos() {
                 let link_start = link_start_widget.has_vertex.clone().unwrap();
@@ -420,10 +415,10 @@ impl TemplateApp {
     }
 
     fn cancel_link_if_esc(&mut self, ui: &mut egui::Ui) {
-        if let Some(link_start_widget) = self
+        if let Some((_, link_start_widget)) = self
             .functions
             .iter_mut()
-            .find(|widget| widget.has_vertex.is_some())
+            .find(|(_, widget)| widget.has_vertex.is_some())
         {
             ui.input(|i| {
                 if i.key_pressed(Key::Escape) {
@@ -446,10 +441,13 @@ impl TemplateApp {
                     .rounding(5.0),
                 );
                 if btn_response.clicked() {
-                    self.functions.push(FunctionWidget::default_with_pos(
-                        Pos2 { x: 0.0, y: 0.0 },
-                        format!("Function #{}", self.last_rect_id),
-                    ));
+                    self.functions.insert(
+                        TinyId::random(),
+                        FunctionWidget::default_with_pos(
+                            Pos2 { x: 0.0, y: 0.0 },
+                            format!("Function #{}", self.last_rect_id),
+                        ),
+                    );
                     self.last_rect_id += 1;
                 }
                 ui.add_space(5.0);
@@ -477,12 +475,12 @@ impl eframe::App for TemplateApp {
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| powered_by_egui_and_eframe(ui));
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.functions.retain(|ele| ele.is_open);
+            self.functions.retain(|_, ele| ele.is_open);
             self.delete_old_links();
 
             let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
-            for ele in self.functions.iter_mut() {
+            for (_, ele) in self.functions.iter_mut() {
                 ui.add(ele);
             }
 
@@ -495,8 +493,7 @@ impl eframe::App for TemplateApp {
             for current_link in self.links.iter_mut() {
                 let start_point_param = self
                     .functions
-                    .iter()
-                    .find(|p| p.id == current_link.start.function_id)
+                    .get(&current_link.start.function_id)
                     .unwrap()
                     .runnable
                     .outputs
@@ -509,8 +506,7 @@ impl eframe::App for TemplateApp {
                     if let Some(last_value) = start_point_param {
                         let end_point_param = self
                             .functions
-                            .iter_mut()
-                            .find(|p| p.id == current_link.end.function_id)
+                            .get_mut(&current_link.end.function_id)
                             .unwrap()
                             .runnable
                             .inputs
