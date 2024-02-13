@@ -17,7 +17,7 @@ pub enum ParamType {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct LinkVertex {
-    pub function_name: String,
+    pub function_id: TinyId,
     pub param_id: TinyId,
 }
 
@@ -107,7 +107,7 @@ impl Runnable {
         }
         panic!(
             "No vertex found with {}, {}",
-            vertex.function_name, vertex.param_id
+            vertex.function_id, vertex.param_id
         )
     }
 
@@ -174,6 +174,7 @@ pub enum WidgetMode {
 #[derive(Deserialize, Serialize)]
 #[must_use = "You should put this widget in an ui with `ui.add(widget);`"]
 pub struct FunctionWidget {
+    pub id: TinyId,
     // Actual code of function
     pub runnable: Runnable,
     // Visual state
@@ -210,6 +211,7 @@ impl FunctionWidget {
 
     pub fn new(runnable: Runnable, initial_pos: Pos2, is_open: bool, is_collapsed: bool) -> Self {
         Self {
+            id: TinyId::random(),
             position: initial_pos,
             interactive_size: Vec2 { x: 230.0, y: 100.0 },
             code_size: Vec2 { x: 400.0, y: 100.0 },
@@ -338,7 +340,7 @@ impl Widget for &mut FunctionWidget {
                                 && !input.is_renaming
                             {
                                 self.has_vertex = Some(LinkVertex {
-                                    function_name: self.runnable.name.clone(),
+                                    function_id: self.id.clone(),
                                     param_id: input_id.clone(),
                                 });
                             }
@@ -416,7 +418,7 @@ impl Widget for &mut FunctionWidget {
                                     && !output.is_renaming
                                 {
                                     self.has_vertex = Some(LinkVertex {
-                                        function_name: self.runnable.name.clone(),
+                                        function_id: self.id.clone(),
                                         param_id: output_id.clone(),
                                     });
                                 }

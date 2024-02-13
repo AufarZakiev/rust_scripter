@@ -30,18 +30,18 @@ impl Default for TemplateApp {
         let param_id2 = function2.runnable.inputs.get_index(0).unwrap().0.clone();
 
         Self {
-            functions: vec![function1, function2],
             links: vec![Link {
                 start: LinkVertex {
-                    function_name: "Function #0".to_owned(),
+                    function_id: function1.id.clone(),
                     param_id: param_id1,
                 },
                 end: LinkVertex {
-                    function_name: "Function #1".to_owned(),
+                    function_id: function2.id.clone(),
                     param_id: param_id2,
                 },
                 should_be_deleted: false,
             }],
+            functions: vec![function1, function2],
             last_rect_id: 3,
         }
     }
@@ -90,12 +90,12 @@ impl TemplateApp {
             let start_point_widget = self
                 .functions
                 .iter()
-                .find(|p| p.runnable.name == current_link.start.function_name);
+                .find(|p| p.id == current_link.start.function_id);
 
             let end_point_widget = self
                 .functions
                 .iter()
-                .find(|p| p.runnable.name == current_link.end.function_name);
+                .find(|p| p.id == current_link.end.function_id);
 
             if start_point_widget.is_none() || end_point_widget.is_none() {
                 current_link.should_be_deleted = true;
@@ -496,7 +496,7 @@ impl eframe::App for TemplateApp {
                 let start_point_param = self
                     .functions
                     .iter()
-                    .find(|p| p.runnable.name == current_link.start.function_name)
+                    .find(|p| p.id == current_link.start.function_id)
                     .unwrap()
                     .runnable
                     .outputs
@@ -510,7 +510,7 @@ impl eframe::App for TemplateApp {
                         let end_point_param = self
                             .functions
                             .iter_mut()
-                            .find(|p| p.runnable.name == current_link.end.function_name)
+                            .find(|p| p.id == current_link.end.function_id)
                             .unwrap()
                             .runnable
                             .inputs
