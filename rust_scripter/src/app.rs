@@ -7,7 +7,7 @@ use tinyid::TinyId;
 use crate::function_widget::function_widget::WidgetMode;
 use crate::function_widget::function_widget::{FunctionWidget, LinkVertex};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 struct Link {
     start: LinkVertex,
     end: LinkVertex,
@@ -331,18 +331,18 @@ impl TemplateApp {
     }
 
     fn create_finished_links(&mut self) {
-        if let Some((_, link_start_widget)) = self
+        if let Some((start_id, link_start_widget)) = self
             .functions
             .iter()
             .find(|(_, widget)| widget.has_vertex.is_some())
         {
-            if let Some((_, link_end_widget)) = self
+            if let Some((end_id, link_end_widget)) = self
                 .functions
                 .iter()
                 .rev()
                 .find(|(_, widget)| widget.has_vertex.is_some())
             {
-                if link_start_widget.runnable.name != link_end_widget.runnable.name {
+                if start_id != end_id {
                     let (link_start, link_end) = if link_start_widget
                         .runnable
                         .inputs
@@ -377,6 +377,7 @@ impl TemplateApp {
                     if let Some((_, link_end)) = self
                         .functions
                         .iter_mut()
+                        .rev()
                         .find(|(_, widget)| widget.has_vertex.is_some())
                     {
                         link_end.has_vertex.take();
@@ -441,13 +442,11 @@ impl TemplateApp {
                     .rounding(5.0),
                 );
                 if btn_response.clicked() {
-                    self.functions.insert(
-                        TinyId::random(),
-                        FunctionWidget::default_with_pos(
-                            Pos2 { x: 0.0, y: 0.0 },
-                            format!("Function #{}", self.last_rect_id),
-                        ),
+                    let new_fw = FunctionWidget::default_with_pos(
+                        Pos2 { x: 0.0, y: 0.0 },
+                        format!("Function #{}", self.last_rect_id),
                     );
+                    self.functions.insert(new_fw.id, new_fw);
                     self.last_rect_id += 1;
                 }
                 ui.add_space(5.0);

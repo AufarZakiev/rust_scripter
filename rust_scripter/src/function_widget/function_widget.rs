@@ -9,19 +9,19 @@ use serde::{Deserialize, Serialize};
 use std::any::type_name;
 use tinyid::TinyId;
 
-#[derive(Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub enum ParamType {
     Input,
     Output,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LinkVertex {
     pub function_id: TinyId,
     pub param_id: TinyId,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FunctionParam {
     pub param_name: String,
     pub type_name: String,
@@ -60,7 +60,7 @@ impl FunctionParam {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Runnable {
     pub name: String,
     pub code: String,
@@ -133,7 +133,7 @@ impl Runnable {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct RenameOptions {
     pub rename_id: TinyId,
     pub param_type: ParamType,
@@ -150,7 +150,7 @@ impl Default for RenameOptions {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct EditOptions {
     pub edit_id: TinyId,
     pub new_last_value: String,
@@ -165,13 +165,13 @@ impl Default for EditOptions {
     }
 }
 
-#[derive(PartialEq, Deserialize, Serialize)]
+#[derive(PartialEq, Deserialize, Serialize, Debug)]
 pub enum WidgetMode {
     Code,
     Signature,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[must_use = "You should put this widget in an ui with `ui.add(widget);`"]
 pub struct FunctionWidget {
     pub id: TinyId,
@@ -500,7 +500,7 @@ fn render_editable_label(
                     .sense(Sense::click())
                     .wrap(true),
             );
-            return (label_response, circle.1, circle.0);
+            (label_response, circle.1, circle.0)
         });
         return row.inner;
     }
@@ -521,9 +521,9 @@ fn render_editable_label(
                 .expect("Entry rename was not inited")
                 .new_name,
         ));
-        return (label_response, circle.1, circle.0);
+        (label_response, circle.1, circle.0)
     });
-    return row.inner;
+    row.inner
 }
 
 fn add_label_behavoir(
