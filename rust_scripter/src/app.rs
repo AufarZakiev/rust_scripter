@@ -336,8 +336,9 @@ impl TemplateApp {
                 };
 
                 if delete_icon_rect.contains(cursor_pos) {
+                    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
                     let delete_icon_response = ui.allocate_ui_at_rect(delete_icon_rect, |ui| {
-                        let delete_icon = Label::new("❌").sense(Sense::click());
+                        let delete_icon = Label::new("❌").selectable(false).sense(Sense::click());
                         ui.with_layout(
                             egui::Layout::centered_and_justified(egui::Direction::TopDown),
                             |ui| ui.add(delete_icon),
