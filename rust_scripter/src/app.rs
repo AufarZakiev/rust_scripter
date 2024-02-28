@@ -41,6 +41,7 @@ impl IntoWeightedEdge<()> for &Link {
 pub struct TemplateApp {
     functions: IndexMap<u16, FunctionWidget>,
     links: Vec<Link>,
+    is_cyclic: bool,
     last_rect_id: usize,
 }
 
@@ -65,6 +66,7 @@ impl Default for TemplateApp {
                 should_be_deleted: false,
             }],
             functions: IndexMap::from([(function1.id, function1), (function2.id, function2)]),
+            is_cyclic: false,
             last_rect_id: 3,
         }
     }
@@ -472,17 +474,16 @@ impl TemplateApp {
                     self.last_rect_id += 1;
                 }
                 ui.add_space(5.0);
-                let btn_response = ui.add(egui::Button::new("▶ Run all").rounding(5.0));
-                // if btn_response.clicked() {
-                //     self.functions
-                // }
+                if !self.is_cyclic {
+                    ui.add(egui::Button::new("▶ Run all").rounding(5.0));
+                };
             });
     }
 
-    fn check_for_cycles(&self) {
+    fn check_for_cycles(&mut self) {
         let g: StableGraph<(), (), Directed, u32> = StableGraph::from_edges(self.links.iter());
 
-        let is_cyclic = is_cyclic_directed(&g);
+        self.is_cyclic = is_cyclic_directed(&g);
     }
 }
 
