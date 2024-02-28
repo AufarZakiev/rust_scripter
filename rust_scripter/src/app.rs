@@ -1,7 +1,9 @@
 use egui::epaint::QuadraticBezierShape;
 use egui::{epaint::CubicBezierShape, Key, Label, Pos2, Rect, Sense, Vec2};
 use indexmap::IndexMap;
+use petgraph::algo::toposort;
 use petgraph::graph::NodeIndex;
+use petgraph::visit::NodeRef;
 use petgraph::{Directed, IntoWeightedEdge};
 use serde::{Deserialize, Serialize};
 
@@ -475,7 +477,20 @@ impl TemplateApp {
                 }
                 ui.add_space(5.0);
                 if !self.is_cyclic {
-                    ui.add(egui::Button::new("▶ Run all").rounding(5.0));
+                    let btn_resp = ui.add(egui::Button::new("▶ Run all").rounding(5.0));
+                    if btn_resp.clicked() {
+                        let g: StableGraph<(), (), Directed, u32> =
+                            StableGraph::from_edges(self.links.iter());
+
+                        let sorted = toposort(&g, None);
+                        if let Ok(sorted) = sorted {
+                            for ele in sorted {
+                                let function_widget =
+                                    self.functions.get_mut(&(ele.index() as u16)).unwrap();
+                                function_widget.runnable.run(&function_widget.engine);
+                            }
+                        }
+                    }
                 };
             });
     }
