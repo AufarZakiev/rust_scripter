@@ -1,8 +1,11 @@
 use egui::epaint::QuadraticBezierShape;
 use egui::{epaint::CubicBezierShape, Key, Label, Pos2, Rect, Sense, Vec2};
 use indexmap::IndexMap;
+use petgraph::graph::NodeIndex;
+use petgraph::{Directed, IntoWeightedEdge};
 use serde::{Deserialize, Serialize};
-use tinyid::TinyId;
+
+use petgraph::{algo::is_cyclic_directed, stable_graph::StableGraph};
 
 use crate::function_widget::function_widget::WidgetMode;
 use crate::function_widget::function_widget::{FunctionWidget, LinkVertex};
@@ -14,11 +17,29 @@ struct Link {
     should_be_deleted: bool,
 }
 
+impl From<LinkVertex> for NodeIndex<u32> {
+    fn from(value: LinkVertex) -> Self {
+        NodeIndex::from(value.function_id as u32)
+    }
+}
+
+impl IntoWeightedEdge<()> for &Link {
+    type NodeId = NodeIndex<u32>;
+
+    fn into_weighted_edge(self) -> (Self::NodeId, Self::NodeId, ()) {
+        (
+            NodeIndex::from(self.start.clone()),
+            NodeIndex::from(self.end.clone()),
+            (),
+        )
+    }
+}
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
-    functions: IndexMap<TinyId, FunctionWidget>,
+    functions: IndexMap<u16, FunctionWidget>,
     links: Vec<Link>,
     last_rect_id: usize,
 }
@@ -456,6 +477,12 @@ impl TemplateApp {
                 // }
             });
     }
+
+    fn check_for_cycles(&self) {
+        let g: StableGraph<(), (), Directed, u32> = StableGraph::from_edges(self.links.iter());
+
+        let is_cyclic = is_cyclic_directed(&g);
+    }
 }
 
 impl eframe::App for TemplateApp {
@@ -474,6 +501,7 @@ impl eframe::App for TemplateApp {
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| powered_by_egui_and_eframe(ui));
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            self.check_for_cycles();
             self.functions.retain(|_, ele| ele.is_open);
             self.delete_old_links();
 

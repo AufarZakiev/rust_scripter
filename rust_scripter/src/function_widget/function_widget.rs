@@ -7,7 +7,6 @@ use indexmap::IndexMap;
 use rhai::{Dynamic, Engine, Map};
 use serde::{Deserialize, Serialize};
 use std::any::type_name;
-use tinyid::TinyId;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub enum ParamType {
@@ -17,8 +16,8 @@ pub enum ParamType {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LinkVertex {
-    pub function_id: TinyId,
-    pub param_id: TinyId,
+    pub function_id: u16,
+    pub param_id: u16,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -64,25 +63,34 @@ impl FunctionParam {
 pub struct Runnable {
     pub name: String,
     pub code: String,
-    pub inputs: IndexMap<TinyId, FunctionParam>,
-    pub outputs: IndexMap<TinyId, FunctionParam>,
+    pub inputs: IndexMap<u16, FunctionParam>,
+    pub outputs: IndexMap<u16, FunctionParam>,
 }
 
 impl Default for Runnable {
     fn default() -> Self {
         let inputs = IndexMap::from_iter([
-            (TinyId::random(), FunctionParam::default_with_name("Input1")),
-            (TinyId::random(), FunctionParam::default_with_name("Input2")),
-            (TinyId::random(), FunctionParam::default_with_name("Input3")),
+            (
+                fastrand::u16(..),
+                FunctionParam::default_with_name("Input1"),
+            ),
+            (
+                fastrand::u16(..),
+                FunctionParam::default_with_name("Input2"),
+            ),
+            (
+                fastrand::u16(..),
+                FunctionParam::default_with_name("Input3"),
+            ),
         ]);
 
         let outputs = IndexMap::from_iter([
             (
-                TinyId::random(),
+                fastrand::u16(..),
                 FunctionParam::default_with_name("Output1"),
             ),
             (
-                TinyId::random(),
+                fastrand::u16(..),
                 FunctionParam::default_with_name("Output2"),
             ),
         ]);
@@ -135,7 +143,7 @@ impl Runnable {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RenameOptions {
-    pub rename_id: TinyId,
+    pub rename_id: u16,
     pub param_type: ParamType,
     pub new_name: String,
 }
@@ -152,7 +160,7 @@ impl Default for RenameOptions {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EditOptions {
-    pub edit_id: TinyId,
+    pub edit_id: u16,
     pub new_last_value: String,
 }
 
@@ -174,7 +182,7 @@ pub enum WidgetMode {
 #[derive(Deserialize, Serialize, Debug)]
 #[must_use = "You should put this widget in an ui with `ui.add(widget);`"]
 pub struct FunctionWidget {
-    pub id: TinyId,
+    pub id: u16,
     // Actual code of function
     pub runnable: Runnable,
     // Visual state
@@ -211,7 +219,7 @@ impl FunctionWidget {
 
     pub fn new(runnable: Runnable, initial_pos: Pos2, is_open: bool, is_collapsed: bool) -> Self {
         Self {
-            id: TinyId::random(),
+            id: fastrand::u16(..),
             position: initial_pos,
             interactive_size: Vec2 { x: 230.0, y: 100.0 },
             code_size: Vec2 { x: 400.0, y: 100.0 },
@@ -381,7 +389,7 @@ impl Widget for &mut FunctionWidget {
                         if columns[0].button("Add...").clicked() {
                             self.runnable
                                 .inputs
-                                .insert(TinyId::random(), FunctionParam::default());
+                                .insert(fastrand::u16(..), FunctionParam::default());
                         };
                         let run_button = egui::Button::new("▶").rounding(5.0);
                         columns[1].with_layout(egui::Layout::top_down(Align::Center), |ui| {
@@ -458,7 +466,7 @@ impl Widget for &mut FunctionWidget {
                         if columns[2].button("Add...").clicked() {
                             self.runnable
                                 .outputs
-                                .insert(TinyId::random(), FunctionParam::default());
+                                .insert(fastrand::u16(..), FunctionParam::default());
                         };
                     });
                 }
@@ -489,7 +497,7 @@ fn render_editable_label(
     ui: &mut Ui,
     rename_options: &mut Option<RenameOptions>,
     param: &mut FunctionParam,
-    param_id: &TinyId,
+    param_id: &u16,
     param_type: ParamType,
 ) -> (Response, Response, Rect) {
     if !param.is_renaming {

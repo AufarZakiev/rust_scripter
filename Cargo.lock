@@ -2352,13 +2352,13 @@ dependencies = [
  "egui",
  "egui_extras",
  "env_logger",
+ "fastrand 2.0.1",
  "image",
  "indexmap",
  "log",
  "petgraph",
  "rhai",
  "serde",
- "tinyid",
  "vectorize",
  "wasm-bindgen-futures",
 ]
@@ -2714,16 +2714,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c9d3793400a45f954c52e73d068316d76b6f4e36977e3fcebb13a2721e80237"
 dependencies = [
  "crunchy",
-]
-
-[[package]]
-name = "tinyid"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ce2c0dac4e3fcad3f6529e3d76ca55e7fa135d5afc442bbcaf756dc62cf8eeb"
-dependencies = [
- "fastrand 1.9.0",
- "serde",
 ]
 
 [[package]]
