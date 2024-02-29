@@ -12,7 +12,7 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
     eframe::run_native(
-        "Oxidized Labview",
+        "Rust scripter",
         native_options,
         Box::new(|cc| Box::new(rust_labview::TemplateApp::new(cc))),
     )
