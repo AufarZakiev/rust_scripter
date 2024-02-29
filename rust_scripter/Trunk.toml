@@ -1,5 +1,5 @@
 [build]
-target = "index.html#dev"
+target = "index.html"
 
 [[hooks]]
 stage = "post_build"
