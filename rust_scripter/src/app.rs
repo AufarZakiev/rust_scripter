@@ -3,7 +3,6 @@ use egui::{epaint::CubicBezierShape, Key, Label, Pos2, Rect, Sense, Vec2};
 use indexmap::IndexMap;
 use petgraph::algo::toposort;
 use petgraph::graph::NodeIndex;
-use petgraph::visit::NodeRef;
 use petgraph::{Directed, IntoWeightedEdge};
 use serde::{Deserialize, Serialize};
 

@@ -605,7 +605,7 @@ fn paint_last_value(
                 *edit_options = Some(EditOptions::default())
             }
             let constant_value = &mut edit_options.as_mut().unwrap().new_last_value;
-            let area_response = Area::new(popup_id)
+            let _area_response = Area::new(popup_id)
                 .order(Order::Foreground)
                 .fixed_pos(param.pos)
                 .constrain(true)
