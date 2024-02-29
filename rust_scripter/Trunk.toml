@@ -1,2 +1,7 @@
 [build]
 target = "index.html#dev"
+
+[[hooks]]
+stage = "post_build"
+command = "cargo"
+command_arguments = ["clippy", "--target", "wasm32-unknown-unknown"]
