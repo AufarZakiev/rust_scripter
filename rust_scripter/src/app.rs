@@ -8,8 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use petgraph::{algo::is_cyclic_directed, stable_graph::StableGraph};
 
-use crate::function_widget::function_widget::WidgetMode;
-use crate::function_widget::function_widget::{FunctionWidget, LinkVertex};
+use crate::function_widget::{FunctionWidget, LinkVertex, WidgetMode};
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Link {
@@ -51,17 +50,17 @@ impl Default for TemplateApp {
         let function1 = FunctionWidget::default();
         let function2 =
             FunctionWidget::default_with_pos(Pos2 { x: 180.0, y: 40.0 }, "Function #1".to_owned());
-        let param_id1 = function1.runnable.outputs.get_index(0).unwrap().0.clone();
-        let param_id2 = function2.runnable.inputs.get_index(0).unwrap().0.clone();
+        let param_id1 = *function1.runnable.outputs.get_index(0).unwrap().0;
+        let param_id2 = *function2.runnable.inputs.get_index(0).unwrap().0;
 
         Self {
             links: vec![Link {
                 start: LinkVertex {
-                    function_id: function1.id.clone(),
+                    function_id: function1.id,
                     param_id: param_id1,
                 },
                 end: LinkVertex {
-                    function_id: function2.id.clone(),
+                    function_id: function2.id,
                     param_id: param_id2,
                 },
                 should_be_deleted: false,
@@ -514,7 +513,7 @@ impl eframe::App for TemplateApp {
 
         self.render_side_panel(ctx);
 
-        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| powered_by_egui_and_eframe(ui));
+        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, powered_by_egui_and_eframe);
 
         egui::CentralPanel::default().show(ctx, |ui| {
             self.check_for_cycles();
