@@ -1,28 +1,35 @@
-[workspace]
-resolver = "2"
-members = [
-    'rust_scripter'
-]
-
-[profile.release]
-# lto = true # VERY slightly smaller wasm
-# opt-level = 's' # 10-20% smaller wasm compared to `opt-level = 3`
-# opt-level = 1 # very slow and big wasm. Don't do this.
-opt-level = 2 # fast and small wasm, basically same as `opt-level = 's'`
-# opt-level = 3 # unnecessarily large wasm for no performance gain
-
-# debug = true # include debug symbols, useful when profiling wasm
+[package]
+name = "rust_scripter"
+version = "0.1.0"
+authors = ["Aufar Zakiev <zaufar@gmail.com>"]
+edition = "2021"
+rust-version = "1.71"
 
 
-[profile.dev]
-# Can't leave this on by default, because it breaks the Windows build. Related: https://github.com/rust-lang/cargo/issues/4897
-# split-debuginfo = "unpacked" # faster debug builds on mac
-# opt-level = 1                # Make debug builds run faster
+[dependencies]
+egui = "0.26.1"
+eframe = { version = "0.26.1", default-features = false, features = [
+    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
+    "default_fonts", # Embed the default egui fonts.
+    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "persistence",   # Enable restoring app state when restarting the app.  
+] }
+egui_extras = { version = "0.26.1", features = ["image", "syntect"] }
+image = { version = "0.24", default-features = false, features = ["png"] }
+log = "0.4"
+vectorize = "0.2.0"
+indexmap =  { version = "2.1.0", features = ['serde'] }
+rhai = { version = "1.17.1", features = ["only_i64", "internals", "wasm-bindgen", "serde"] }
 
-# Optimize all dependencies even in debug builds (does not affect workspace packages):
-[profile.dev.package."*"]
-opt-level = 2
+# You only need serde if you want app persistence:
+serde = { version = "1", features = ["derive"] }
+petgraph = "0.6.4"
+fastrand = "2.0.1"
 
-[workspace.dependencies]
-thiserror = "1.0.56"
-wgpu = "0.19.1"
+# native:
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+env_logger = "0.11"
+
+# web:
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
