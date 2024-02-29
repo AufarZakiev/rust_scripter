@@ -3639,7 +3639,3 @@ dependencies = [
  "quote",
  "syn 1.0.109",
 ]
-
-[[patch.unused]]
-name = "egui"
-version = "0.25.0"
