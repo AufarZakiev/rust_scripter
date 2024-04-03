@@ -7,14 +7,14 @@ rust-version = "1.71"
 
 
 [dependencies]
-egui = "0.26.1"
-eframe = { version = "0.26.1", default-features = false, features = [
+egui = "0.27.2"
+eframe = { version = "0.27.2", default-features = false, features = [
     "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "persistence",   # Enable restoring app state when restarting the app.  
 ] }
-egui_extras = { version = "0.26.1", features = ["image", "syntect"] }
+egui_extras = { version = "0.27.2", features = ["image", "syntect"] }
 image = { version = "0.24", default-features = false, features = ["png"] }
 log = "0.4"
 vectorize = "0.2.0"
