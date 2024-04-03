@@ -486,6 +486,8 @@ impl TemplateApp {
                                 let function_widget =
                                     self.functions.get_mut(&(ele.index() as u16)).unwrap();
                                 function_widget.runnable.run(&function_widget.engine);
+
+                                self.update_last_values();
                             }
                         }
                     }
@@ -497,6 +499,36 @@ impl TemplateApp {
         let g: StableGraph<(), (), Directed, u32> = StableGraph::from_edges(self.links.iter());
 
         self.is_cyclic = is_cyclic_directed(&g);
+    }
+
+    fn update_last_values(&mut self) {
+        for current_link in self.links.iter_mut() {
+            let start_point_param = self
+                .functions
+                .get(&current_link.start.function_id)
+                .unwrap()
+                .runnable
+                .outputs
+                .get(&current_link.start.param_id)
+                .unwrap()
+                .last_value
+                .clone();
+
+            if start_point_param.is_some() {
+                if let Some(last_value) = start_point_param {
+                    let end_point_param = self
+                        .functions
+                        .get_mut(&current_link.end.function_id)
+                        .unwrap()
+                        .runnable
+                        .inputs
+                        .get_mut(&current_link.end.param_id)
+                        .unwrap();
+
+                    end_point_param.last_value = Some(last_value);
+                }
+            }
+        }
     }
 }
 
@@ -532,33 +564,7 @@ impl eframe::App for TemplateApp {
             self.render_links(ui, stroke);
 
             self.delete_old_links();
-            for current_link in self.links.iter_mut() {
-                let start_point_param = self
-                    .functions
-                    .get(&current_link.start.function_id)
-                    .unwrap()
-                    .runnable
-                    .outputs
-                    .get(&current_link.start.param_id)
-                    .unwrap()
-                    .last_value
-                    .clone();
-
-                if start_point_param.is_some() {
-                    if let Some(last_value) = start_point_param {
-                        let end_point_param = self
-                            .functions
-                            .get_mut(&current_link.end.function_id)
-                            .unwrap()
-                            .runnable
-                            .inputs
-                            .get_mut(&current_link.end.param_id)
-                            .unwrap();
-
-                        end_point_param.last_value = Some(last_value);
-                    }
-                }
-            }
+            self.update_last_values();
         });
     }
 }

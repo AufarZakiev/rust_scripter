@@ -125,10 +125,14 @@ impl Runnable {
             "let ",
             self.inputs
                 .iter()
-                .map(|input| input.1.param_name.clone())
+                .map(|input| format!(
+                    "{} = {}",
+                    input.1.param_name.clone(),
+                    input.1.last_value.clone().unwrap_or("3".into()).to_string()
+                ))
                 .collect::<Vec<String>>()
-                .join(" = 3; let "),
-            " = 3;"
+                .join("; let "),
+            ";"
         );
         if let Ok(result) = engine.eval::<Map>(format!("{} {}", prepend_code, &self.code).as_str())
         {
