@@ -314,71 +314,75 @@ impl Widget for &mut FunctionWidget {
                     let stroke = ui.visuals().widgets.hovered.bg_stroke;
 
                     ui.columns(3, |columns| {
-                        for (input_id, input) in self.runnable.inputs.iter_mut() {
-                            let label_row = render_editable_label(
-                                &mut columns[0],
-                                &mut self.rename_options,
-                                input,
-                                input_id,
-                                ParamType::Input,
-                            );
-                            let label_response = label_row.0;
-                            let circle_response = label_row.1;
-                            let circle_rect = label_row.2;
-
-                            paint_circle(&columns[0], &circle_rect);
-                            input.pos = circle_rect.center();
-
-                            paint_last_value(
-                                &columns[0],
-                                input,
-                                circle_rect,
-                                &mut self.edit_options,
-                                ParamType::Input,
-                            );
-
-                            if (label_response.clicked() || circle_response.clicked())
-                                && !input.is_renaming
-                            {
-                                self.has_vertex = Some(LinkVertex {
-                                    function_id: self.id,
-                                    param_id: *input_id,
-                                });
-                            }
-
-                            add_label_behavoir(
-                                &mut columns[0],
-                                &mut self.has_vertex,
-                                &mut self.rename_options,
-                                &label_response,
-                                input,
-                            );
-                            if label_response.hovered() || circle_response.hovered() {
-                                columns[0].painter().circle(
-                                    circle_rect.center(),
-                                    2.5,
-                                    Color32::from_rgb(255, 255, 255),
-                                    stroke,
+                        let value_changed = self.runnable.inputs.iter_mut().fold(
+                            false,
+                            |acc, (input_id, input)| {
+                                let label_row = render_editable_label(
+                                    &mut columns[0],
+                                    &mut self.rename_options,
+                                    input,
+                                    input_id,
+                                    ParamType::Input,
                                 );
-                            }
+                                let label_response = label_row.0;
+                                let circle_response = label_row.1;
+                                let circle_rect = label_row.2;
 
-                            label_response.context_menu(|ui| {
-                                if ui.button("Set constant").clicked() {
-                                    input.is_editing = true;
-                                    ui.memory_mut(|mem| mem.toggle_popup("constant_id".into()));
-                                    ui.close_menu();
+                                paint_circle(&columns[0], &circle_rect);
+                                input.pos = circle_rect.center();
+
+                                let value_changed = paint_last_value(
+                                    &columns[0],
+                                    input,
+                                    circle_rect,
+                                    &mut self.edit_options,
+                                    ParamType::Input,
+                                );
+
+                                if (label_response.clicked() || circle_response.clicked())
+                                    && !input.is_renaming
+                                {
+                                    self.has_vertex = Some(LinkVertex {
+                                        function_id: self.id,
+                                        param_id: *input_id,
+                                    });
                                 }
-                                let btn = Button::new("Rename").shortcut_text("Double-click");
-                                if ui.add(btn).clicked() {
-                                    input.is_renaming = true;
-                                    ui.close_menu();
+
+                                add_label_behavoir(
+                                    &mut columns[0],
+                                    &mut self.has_vertex,
+                                    &mut self.rename_options,
+                                    &label_response,
+                                    input,
+                                );
+                                if label_response.hovered() || circle_response.hovered() {
+                                    columns[0].painter().circle(
+                                        circle_rect.center(),
+                                        2.5,
+                                        Color32::from_rgb(255, 255, 255),
+                                        stroke,
+                                    );
                                 }
-                                if ui.button("Delete").clicked() {
-                                    input.should_be_deleted = true;
-                                    ui.close_menu();
-                                }
-                            });
-                        }
+
+                                label_response.context_menu(|ui| {
+                                    if ui.button("Set constant").clicked() {
+                                        input.is_editing = true;
+                                        ui.memory_mut(|mem| mem.toggle_popup("constant_id".into()));
+                                        ui.close_menu();
+                                    }
+                                    let btn = Button::new("Rename").shortcut_text("Double-click");
+                                    if ui.add(btn).clicked() {
+                                        input.is_renaming = true;
+                                        ui.close_menu();
+                                    }
+                                    if ui.button("Delete").clicked() {
+                                        input.should_be_deleted = true;
+                                        ui.close_menu();
+                                    }
+                                });
+                                value_changed || acc
+                            },
+                        );
                         if columns[0].button("Add...").clicked() {
                             self.runnable
                                 .inputs
@@ -461,6 +465,10 @@ impl Widget for &mut FunctionWidget {
                                 .outputs
                                 .insert(fastrand::u16(..), FunctionParam::default());
                         };
+
+                        if value_changed {
+                            self.runnable.run(&self.engine);
+                        }
                     });
                 }
             })
@@ -575,7 +583,7 @@ fn paint_last_value(
     circle_rect: Rect,
     edit_options: &mut Option<EditOptions>,
     param_type: ParamType,
-) {
+) -> bool {
     let font_id = TextStyle::Body.resolve(ui.style());
     let visuals = ui.visuals();
     let painter = ui.ctx().layer_painter(LayerId::new(
@@ -616,6 +624,8 @@ fn paint_last_value(
                     param.last_value = Some(Dynamic::from_int(value));
                 }
                 *edit_options = None;
+
+                return true;
             }
         }
     } else if let Some(ref last_value) = param.last_value {
@@ -653,7 +663,9 @@ fn paint_last_value(
             font_id.clone(),
             visuals.text_color(),
         );
+        return false;
     }
+    false
 }
 
 fn paint_circle(ui: &Ui, circle_rect: &Rect) {

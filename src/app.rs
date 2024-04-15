@@ -526,6 +526,13 @@ impl TemplateApp {
                         .unwrap();
 
                     end_point_param.last_value = Some(last_value);
+
+                    let changed_widget = self
+                        .functions
+                        .get_mut(&current_link.end.function_id)
+                        .unwrap();
+
+                    changed_widget.runnable.run(&changed_widget.engine)
                 }
             }
         }
