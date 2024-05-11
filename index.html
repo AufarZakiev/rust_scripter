@@ -7,9 +7,8 @@
   
     <title>Rust & Vue scripter</title>
 
-    <!-- config for our rust wasm binary. go to https://trunkrs.dev/assets/#rust for more customization -->
-    <script type="module">import init from '/dist/rust_scripter.js';init('/dist/rust_scripter_bg.wasm');</script>
-    
+    <link rel="preload" href="/dist/rust_scripter_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+    <link rel="modulepreload" href="/dist/rust_scripter.js">    
   </head>
   <body>
     <div id="app"></div>
