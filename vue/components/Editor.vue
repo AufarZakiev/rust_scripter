@@ -10,9 +10,4 @@
 
 <style scoped>
 
-#the_canvas_id {
-  width: 100% !important;
-  height: 100% !important;
-}
-
 </style>

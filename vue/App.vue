@@ -33,6 +33,7 @@ const splitterModel = ref(20);
           vertical
           transition-prev="jump-up"
           transition-next="jump-up"
+          keep-alive
         >
           <q-tab-panel name="account">
             <div class="text-h4 q-mb-md">My account</div>
