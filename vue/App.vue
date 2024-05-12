@@ -20,8 +20,8 @@ const splitterModel = ref(20);
           vertical
           class="text-teal"
         >
-          <q-tab name="account" icon="mail" label="account" />
-          <q-tab name="editor" icon="alarm" label="editor" />
+          <q-tab name="account" icon="account_circle" label="account" />
+          <q-tab name="editor" icon="edit" label="editor" />
         </q-tabs>
       </template>
 
