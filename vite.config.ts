@@ -10,5 +10,5 @@ export default defineConfig({
     }),
     quasar()
   ],
-  base: "rust_scripter"
+  base: "/rust_scripter"
 })
