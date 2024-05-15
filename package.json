@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite & cd rust && cargo watch -s \"trunk serve\"",
-    "build": "vue-tsc && vite build && cd rust && trunk build --release",
+    "build": "cd rust && trunk build --release && cd .. && vue-tsc && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

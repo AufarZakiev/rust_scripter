@@ -1,5 +1,4 @@
 [build]
 target = "index.html"
-dist = "./../dist/dist"
+dist = "./../dist"
 filehash = false
-inject_scripts = false
