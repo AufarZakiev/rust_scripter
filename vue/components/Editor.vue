@@ -1,7 +1,9 @@
 <script setup lang="ts">
-  import init from '/dist/rust_scripter.js';
+  //@ts-ignore
+  import init from '/dist/rust/rust_scripter.js';
 
-  init('/dist/rust_scripter_bg.wasm');
+  //@ts-ignore
+  init(`${import.meta.env.BASE_URL}/dist/rust/rust_scripter_bg.wasm`);
 </script>
 
 <template>
