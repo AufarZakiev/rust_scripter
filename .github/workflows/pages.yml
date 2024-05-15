@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build # build
-        run: cd rust && ../trunk build --release && cd .. && npx vite build
+        run: npx vite build && cd rust && ../trunk build --release
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:

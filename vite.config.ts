@@ -10,5 +10,10 @@ export default defineConfig({
     }),
     quasar()
   ],
-  base: "/rust_scripter"
+  base: "/rust_scripter",
+  build: {
+    rollupOptions: {
+      external: '/dist/rust_scripter.js'
+    },
+  }
 })
