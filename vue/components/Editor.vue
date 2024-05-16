@@ -3,7 +3,7 @@
   import init from '/dist/rust/rust_scripter.js';
 
   //@ts-ignore
-  init(`${import.meta.env.BASE_URL}/dist/rust/rust_scripter_bg.wasm`);
+  init();
 </script>
 
 <template>
