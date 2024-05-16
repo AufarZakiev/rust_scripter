@@ -16,7 +16,7 @@ export default defineConfig({
       external: '/dist/rust/rust_scripter.js',
       output: {
         paths: {
-          '/dist/rust/rust_scripter.js': '/rust_scripter/dist/rust/rust_scripter.js'
+          '/dist/rust/rust_scripter.js': '/rust_scripter/rust/rust_scripter.js'
         }
       }
     },
