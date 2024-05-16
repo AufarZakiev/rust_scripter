@@ -13,7 +13,12 @@ export default defineConfig({
   base: "/rust_scripter",
   build: {
     rollupOptions: {
-      external: '/dist/rust/rust_scripter.js'
+      external: '/dist/rust/rust_scripter.js',
+      output: {
+        paths: {
+          '/dist/rust/rust_scripter.js': '/rust_scripter/dist/rust/rust_scripter.js'
+        }
+      }
     },
   }
 })
