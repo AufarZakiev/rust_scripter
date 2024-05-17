@@ -1,9 +1,19 @@
-# Vue 3 + TypeScript + Vite
+# Vue 3 + Rust (egui) combination project
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+This project is demo for uniting two different technologies:
+- [Vue 3](https://vuejs.org/) (TS)
+- [Egui](https://github.com/emilk/egui) (Rust)
+- [Bundler](https://vitejs.dev/): Vite
+- Component library for Vue: [Quasar](https://quasar.dev/)
 
-## Recommended Setup
+Done to make a challenge and see how it works together. 
+Egui part is incapsulated into "Editor" tab; Vue 3 wraps everything and provides common UX.
 
-- [VS Code](https://code.visualstudio.com/) + [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (previously Volar) and disable Vetur
+## Editor
 
-- Use [vue-tsc](https://github.com/vuejs/language-tools/tree/master/packages/tsc) for performing the same type checking from the command line, or for generating d.ts files for SFCs.
+Editor is a self-contained app used to create pipeline of [Rhai](https://rhai.rs/) scripts. 
+It is very basic and misses a lot of features.
+
+## Demo
+
+Deployed to: https://aufarzakiev.github.io/rust_scripter/ .
