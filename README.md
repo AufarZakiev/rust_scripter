@@ -1,19 +1,19 @@
-# Vue 3 + Rust (egui) combination project
+### Vue 3 & Rust combined
 
-This project is demo for uniting two different technologies:
+This demo unites:
 - [Vue 3](https://vuejs.org/) (TS)
 - [Egui](https://github.com/emilk/egui) (Rust)
 - [Bundler](https://vitejs.dev/): Vite
 - Component library for Vue: [Quasar](https://quasar.dev/)
 
-Done to make a challenge and see how it works together. 
-Egui part is incapsulated into "Editor" tab; Vue 3 wraps everything and provides common UX.
+#### Why is it cool
 
-## Editor
+Rust part is compiled into WASM. WASM-based graphics (in "Demo" tab) performs in 60 FPS. It could be used to render
+highly interactive components, e.g. editors, charts, etc.
 
-Editor is a self-contained app used to create pipeline of [Rhai](https://rhai.rs/) scripts. 
-It is very basic and misses a lot of features.
+Vue is commonly used JS framework. It isolates Rusty part of the app and makes it easy to create other app parts.
+Vue's ecosystem (such as Quasar) could be used in full power.
 
-## Demo
+#### Demo
 
-Deployed to: https://aufarzakiev.github.io/rust_scripter/ .
+Deployed to [Github pages](https://aufarzakiev.github.io/rust_scripter/)

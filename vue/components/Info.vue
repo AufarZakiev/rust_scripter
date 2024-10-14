@@ -13,5 +13,6 @@ import { VueComponent as ContentMarkdown } from '../../README.md'
   max-width: 750px;
   text-align: justify;
   margin: auto;
+  font-size: large;
 }
 </style>
