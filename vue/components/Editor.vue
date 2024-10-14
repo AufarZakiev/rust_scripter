@@ -1,20 +1,24 @@
 <script setup lang="ts">
-  //@ts-ignore
+  import { onMounted, ref } from 'vue';
   import init from '/dist/rust/rust_scripter.js';
 
-  //@ts-ignore
-  init();
+  const isReady = ref(false);
+
+  onMounted(async () => {
+    const t = await init();
+    isReady.value = true;
+    console.log(t);
+  })
 </script>
 
 <template>
-  <canvas id="the_canvas_id"></canvas>
+  <canvas id="the_canvas_id"/>
 
-  <!-- the loading spinner will be removed in main.rs -->
-  <div class="centered" id="loading_text">
-    <p style="font-size:16px">
+  <div v-if="!isReady" id="loading">
+    <p style="">
         Loading…
     </p>
-    <div class="lds-dual-ring"></div>
+    <q-linear-progress indeterminate style="width: 800px;"/>
   </div>
 </template>
 
@@ -24,5 +28,19 @@
   max-height: 100%;
   height: 100%;
   width: 100%;
+}
+
+#loading {
+  position: absolute; 
+  top: 0; 
+  left: 0;
+  background-color: lightgray;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  font-size:24px
 }
 </style>
