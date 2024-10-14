@@ -38,7 +38,7 @@ const splitterModel = ref(20);
             <div class="text-h4 q-mb-md">My account</div>
           </q-tab-panel>
 
-          <q-tab-panel name="editor" class="q-pa-none" style="height: 100vh;">
+          <q-tab-panel name="editor" class="q-pa-none" style="height: 100vh;overflow: hidden;">
             <KeepAlive>
               <Editor/> 
             </KeepAlive> 
