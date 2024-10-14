@@ -2,51 +2,39 @@
 import { ref } from 'vue'
 
 import Editor from './components/Editor.vue'
+import Info from './components/Info.vue';
 
-const tab = ref('editor');
-const splitterModel = ref(20);
+const tab = ref('info');
     
 </script>
 
 <template>
-  <q-splitter
-      v-model="splitterModel"
-      style="height: 100%"
+  <div style="height: 100%; display: flex; flex-direction: column;">
+    <q-tabs
+      v-model="tab"
+      class="text-teal"
     >
+      <q-tab name="info" label="what is it" />
+      <q-tab name="demo" label="demo" />
+    </q-tabs>
 
-      <template v-slot:before>
-        <q-tabs
-          v-model="tab"
-          vertical
-          class="text-teal"
-        >
-          <q-tab name="account" icon="account_circle" label="account" />
-          <q-tab name="editor" icon="edit" label="editor" />
-        </q-tabs>
-      </template>
+    <q-tab-panels
+      v-model="tab"
+      animated
+      transition-prev="jump-up"
+      transition-next="jump-up"
+      keep-alive
+      style="flex-grow: 1;"
+    >
+      <q-tab-panel name="info">
+        <Info/>
+      </q-tab-panel>
 
-      <template v-slot:after>
-        <q-tab-panels
-          v-model="tab"
-          animated
-          vertical
-          transition-prev="jump-up"
-          transition-next="jump-up"
-          keep-alive
-        >
-          <q-tab-panel name="account">
-            <div class="text-h4 q-mb-md">My account</div>
-          </q-tab-panel>
-
-          <q-tab-panel name="editor" class="q-pa-none" style="height: 100vh;overflow: hidden;">
-            <KeepAlive>
-              <Editor/> 
-            </KeepAlive> 
-          </q-tab-panel>
-        </q-tab-panels>
-      </template>
-
-    </q-splitter>
+      <q-tab-panel name="demo" class="q-pa-none" style="overflow: hidden;">
+        <Editor/> 
+      </q-tab-panel>
+    </q-tab-panels>
+  </div>
 </template>
 
 <style scoped>
