@@ -287,12 +287,17 @@ impl Widget for &mut FunctionWidget {
 
                 if self.mode == WidgetMode::Code {
                     let language = "rs";
-                    let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
+                    let style: std::sync::Arc<egui::Style> = ui.ctx().style();
+                    let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(
+                        ui.ctx(),
+                        style.as_ref(),
+                    );
 
                     let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
                         // REIMPLEMENT FOR FILE SUPPORT & MAKE A PR FOR GUI EXTRAS
                         let mut layout_job = egui_extras::syntax_highlighting::highlight(
                             ui.ctx(),
+                            &style,
                             &theme,
                             string,
                             language,
@@ -507,7 +512,7 @@ fn render_editable_label(
             let label_response = ui.add(
                 Label::new(param.param_name.clone())
                     .sense(Sense::click())
-                    .wrap(true),
+                    .wrap(),
             );
             (label_response, circle.1, circle.0)
         });

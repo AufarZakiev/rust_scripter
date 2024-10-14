@@ -3,19 +3,19 @@ name = "rust_scripter"
 version = "0.1.0"
 authors = ["Aufar Zakiev <zaufar@gmail.com>"]
 edition = "2021"
-rust-version = "1.71"
+rust-version = "1.81"
 
 
 [dependencies]
-egui = "0.27.2"
-eframe = { version = "0.27.2", default-features = false, features = [
+egui = "0.29.1"
+eframe = { version = "^0.29.1", default-features = false, features = [
     "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "persistence",   # Enable restoring app state when restarting the app.  
 ] }
-egui_extras = { version = "0.27.2", features = ["image", "syntect"] }
-image = { version = "0.24", default-features = false, features = ["png"] }
+egui_extras = { version = "0.29.1", features = ["image", "syntect"] }
+image = { version = "0.25.2", default-features = false, features = ["png"] }
 log = "0.4"
 vectorize = "0.2.0"
 indexmap =  { version = "2.1.0", features = ['serde'] }

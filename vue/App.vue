@@ -40,7 +40,9 @@ const splitterModel = ref(20);
           </q-tab-panel>
 
           <q-tab-panel name="editor" class="q-pa-none" style="height: 100vh;">
-            <Editor/>
+            <KeepAlive>
+              <Editor/> 
+            </KeepAlive> 
           </q-tab-panel>
         </q-tab-panels>
       </template>
