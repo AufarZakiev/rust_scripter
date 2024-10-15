@@ -73,6 +73,15 @@ impl Default for TemplateApp {
 }
 
 impl TemplateApp {
+    #[no_mangle]
+    pub fn my_alert(self: &Self) {
+        use eframe::web_sys;
+        let window = web_sys::window().expect("No window");
+        let _ = window.alert_with_message(
+            "This alert is called from Rust. You could also get access to DOM.",
+        );
+    }
+
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
@@ -455,7 +464,7 @@ impl TemplateApp {
 
     fn render_side_panel(&mut self, ctx: &egui::Context) {
         egui::SidePanel::left("Toolbox")
-            .exact_width(80.0)
+            .exact_width(130.0)
             .show(ctx, |ui| {
                 ui.add_space(5.0);
                 let btn_response = ui.add(
@@ -474,24 +483,30 @@ impl TemplateApp {
                     self.last_rect_id += 1;
                 }
                 ui.add_space(5.0);
-                if !self.is_cyclic {
-                    let btn_resp = ui.add(egui::Button::new("▶ Run all").rounding(5.0));
-                    if btn_resp.clicked() {
-                        let g: StableGraph<(), (), Directed, u32> =
-                            StableGraph::from_edges(self.links.iter());
+                let btn_resp = ui.add_enabled(
+                    !self.is_cyclic,
+                    egui::Button::new("▶ Run all").rounding(5.0),
+                );
+                if btn_resp.clicked() {
+                    let g: StableGraph<(), (), Directed, u32> =
+                        StableGraph::from_edges(self.links.iter());
 
-                        let sorted = toposort(&g, None);
-                        if let Ok(sorted) = sorted {
-                            for ele in sorted {
-                                let function_widget =
-                                    self.functions.get_mut(&(ele.index() as u16)).unwrap();
-                                function_widget.runnable.run(&function_widget.engine);
+                    let sorted = toposort(&g, None);
+                    if let Ok(sorted) = sorted {
+                        for ele in sorted {
+                            let function_widget =
+                                self.functions.get_mut(&(ele.index() as u16)).unwrap();
+                            function_widget.runnable.run(&function_widget.engine);
 
-                                self.update_last_values();
-                            }
+                            self.update_last_values();
                         }
                     }
-                };
+                }
+                ui.add_space(5.0);
+                let alert_btn_response = ui.button("Call alert from Rust");
+                if alert_btn_response.clicked() {
+                    self.my_alert();
+                }
             });
     }
 

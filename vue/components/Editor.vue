@@ -1,17 +1,40 @@
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
+  import { computed, onMounted, ref } from 'vue';
   import init from '/dist/rust/rust_scripter.js';
 
   const isReady = ref(false);
+  const rustAdder = ref(null as null | Function)
 
   onMounted(async () => {
-    const t = await init();
+    const rustModule = await init();
     isReady.value = true;
-    console.log(t);
+    rustAdder.value = rustModule.add;
+  })
+
+  const a = ref(2);
+  const b = ref(2);
+  const res = computed(() => {
+    if (!rustAdder.value) return 'Failed';
+
+    return rustAdder.value(a.value, b.value)
   })
 </script>
 
 <template>
+  <div class="calc">
+    <span> Try Rusty adder: </span>
+    <q-input v-model="a" inputmode="numeric" dense input-style="text-align: center"/>
+    <span> + </span>
+    <q-input v-model="b" inputmode="numeric" dense input-style="text-align: center" />
+    <span> = </span>
+    <q-input v-model="res" readonly dense filled input-style="text-align: center"/>
+    <q-icon name="info">
+      <q-tooltip>
+        This value was retrieved from Rust code
+      </q-tooltip>
+    </q-icon>
+  </div>
+
   <canvas id="the_canvas_id"/>
 
   <div v-if="!isReady" id="loading">
@@ -42,5 +65,21 @@
   flex-direction: column;
   align-items: center;
   font-size:24px
+}
+
+.calc {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding-bottom: 5px;
+}
+
+.calc span, i {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.calc .q-field {
+  width: 40px;
 }
 </style>
